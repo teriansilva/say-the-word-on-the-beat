@@ -450,10 +450,13 @@ function App() {
             </div>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-8">
-              <div className="mb-8">
+              <div className="mb-8 flex flex-col items-center gap-2">
                 <Badge variant="secondary" className="text-2xl font-bold px-6 py-2">
                   Round {currentRound} of {currentRounds}
                 </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {Math.round(calculateRoundBpm(currentRound, customAudioRef.current?.currentTime || defaultAudioRef.current?.currentTime))} BPM
+                </span>
               </div>
               
               <div 

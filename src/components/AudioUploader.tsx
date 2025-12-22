@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Slider } from '@/components/ui/slider'
 import { Upload, Waveform, X } from '@phosphor-icons/react'
 import { useRef } from 'react'
 import { toast } from 'sonner'
@@ -8,9 +10,12 @@ interface AudioUploaderProps {
   audioUrl: string | null
   onAudioUpload: (audioUrl: string) => void
   onAudioRemove: () => void
+  bpm: number
+  onBpmChange: (bpm: number) => void
+  isPlaying: boolean
 }
 
-export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove }: AudioUploaderProps) {
+export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onBpmChange, isPlaying }: AudioUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +76,7 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove }: AudioU
           </div>
         ) : (
           <div className="text-xs text-muted-foreground">
-            Using default metronome sound
+            Using default sound: <span className="font-semibold text-foreground">Say the Word on Beat</span>
           </div>
         )}
 
@@ -92,6 +97,26 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove }: AudioU
           onChange={handleFileUpload}
           className="hidden"
         />
+
+        <div className="pt-3 border-t border-border space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-semibold text-foreground">
+              Tempo
+            </label>
+            <Badge variant="secondary" className="text-sm font-bold">
+              {bpm} BPM
+            </Badge>
+          </div>
+          <Slider
+            value={[bpm]}
+            onValueChange={([value]) => onBpmChange(value)}
+            min={60}
+            max={180}
+            step={1}
+            className="w-full"
+            disabled={isPlaying}
+          />
+        </div>
       </div>
     </Card>
   )

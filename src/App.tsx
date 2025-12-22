@@ -490,26 +490,6 @@ function App() {
             </Card>
           )}
           
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-lg font-semibold text-foreground">
-                Tempo
-              </label>
-              <Badge variant="secondary" className="text-base font-bold">
-                {currentBpm} BPM
-              </Badge>
-            </div>
-            <Slider
-              value={[currentBpm]}
-              onValueChange={([value]) => setBpm(value)}
-              min={60}
-              max={180}
-              step={1}
-              className="w-full"
-              disabled={isPlaying}
-            />
-          </div>
-          
           <Card className="p-4 border-2">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
@@ -533,6 +513,9 @@ function App() {
             audioUrl={customAudio ?? null}
             onAudioUpload={(url) => setCustomAudio(url)}
             onAudioRemove={() => setCustomAudio(null)}
+            bpm={currentBpm}
+            onBpmChange={(value) => setBpm(value)}
+            isPlaying={isPlaying}
           />
           
           <div className="space-y-3">

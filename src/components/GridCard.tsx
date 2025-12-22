@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card'
 import { Plus, Question } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { sanitizeText } from '@/lib/security'
 
 interface GridCardProps {
   content: string
@@ -12,6 +13,9 @@ interface GridCardProps {
 
 export function GridCard({ content, contentType, isActive, hasBeenRevealed, word }: GridCardProps) {
   const shouldShowContent = hasBeenRevealed
+  
+  // Sanitize word for display
+  const safeWord = word ? sanitizeText(word) : undefined
   
   return (
     <Card
@@ -40,10 +44,10 @@ export function GridCard({ content, contentType, isActive, hasBeenRevealed, word
               alt="Custom content"
               className="absolute inset-0 w-full h-full object-cover"
             />
-            {word && (
+            {safeWord && (
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-8 pb-3 px-3">
                 <p className="text-white text-2xl md:text-3xl font-bold text-center leading-tight drop-shadow-lg" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
-                  {word}
+                  {safeWord}
                 </p>
               </div>
             )}

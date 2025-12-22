@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Upload, X, Images, Pencil } from '@phosphor-icons/react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { validateImageFile, sanitizeText } from '@/lib/security'
 
 export interface ImagePoolItem {
   url: string
@@ -21,7 +22,7 @@ export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerPro
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingWord, setEditingWord] = useState('')
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
 
@@ -31,17 +32,20 @@ export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerPro
       return
     }
 
-    const validFiles = files.filter(file => {
-      if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} is not a valid image file`)
-        return false
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`${file.name} is larger than 5MB`)
+    // Validate all files first
+    const validationPromises = files.map(async file => {
+      const validation = await validateImageFile(file)
+      return { file, validation }
+    })
+
+    const validationResults = await Promise.all(validationPromises)
+    const validFiles = validationResults.filter(result => {
+      if (!result.validation.valid) {
+        toast.error(`${result.file.name}: ${result.validation.error}`)
         return false
       }
       return true
-    })
+    }).map(result => result.file)
 
     if (validFiles.length === 0) return
 
@@ -83,15 +87,16 @@ export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerPro
   }
 
   const handleSaveWord = (index: number) => {
+    const sanitizedWord = sanitizeText(editingWord.trim())
     const updatedImages = [...images]
     updatedImages[index] = { 
       ...updatedImages[index], 
-      word: editingWord.trim() || undefined 
+      word: sanitizedWord || undefined 
     }
     onImagesChange(updatedImages)
     setEditingIndex(null)
     setEditingWord('')
-    toast.success(editingWord.trim() ? 'Word saved' : 'Word removed')
+    toast.success(sanitizedWord ? 'Word saved' : 'Word removed')
   }
 
   return (

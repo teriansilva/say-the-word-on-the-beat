@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Toaster } from '@/components/ui/sonner'
-import { PlayCircle, PauseCircle, ShareNetwork, Coffee } from '@phosphor-icons/react'
+import { PauseCircle } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { GridCard } from '@/components/GridCard'
 import { AudioUploader } from '@/components/AudioUploader'
@@ -15,6 +15,7 @@ import { ShareModal } from '@/components/ShareModal'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { getBpmAtTime, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
+import { FloatingMenu } from '@/components/FloatingMenu'
 
 interface GridItem {
   content: string
@@ -461,7 +462,7 @@ function App() {
 
   return (
     <div className="min-h-screen p-4 md:p-8">
-      <Toaster />
+      <Toaster position="bottom-left" offset="24px" />
       
       {isFullscreen && (
         <div className="fixed inset-0 bg-background z-[100] flex items-center justify-center">
@@ -692,37 +693,11 @@ function App() {
       />
 
       {!isFullscreen && (
-        <div className="fixed bottom-8 right-8 flex flex-col gap-3 z-50">
-          <Button
-            size="lg"
-            variant="outline"
-            className="h-14 w-14 rounded-full shadow-2xl p-0 bg-[#FFDD00] hover:bg-[#FFDD00]/90 border-2 border-[#000000]"
-            onClick={() => window.open('https://buymeacoffee.com/teriansilva', '_blank')}
-          >
-            <Coffee size={28} weight="fill" className="text-[#000000]" />
-          </Button>
-          
-          <Button
-            size="lg"
-            variant="secondary"
-            className="h-14 w-14 rounded-full shadow-2xl p-0"
-            onClick={() => setShareModalOpen(true)}
-          >
-            <ShareNetwork size={28} weight="fill" />
-          </Button>
-          
-          <Button
-            size="lg"
-            className="h-16 w-16 rounded-full shadow-2xl text-base font-bold p-0"
-            onClick={handlePlayPause}
-          >
-            {isPlaying ? (
-              <PauseCircle size={36} weight="fill" />
-            ) : (
-              <PlayCircle size={36} weight="fill" />
-            )}
-          </Button>
-        </div>
+        <FloatingMenu
+          isPlaying={isPlaying}
+          onPlayPause={handlePlayPause}
+          onShareClick={() => setShareModalOpen(true)}
+        />
       )}
     </div>
   )

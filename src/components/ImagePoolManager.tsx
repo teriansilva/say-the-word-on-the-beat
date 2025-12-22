@@ -17,7 +17,7 @@ export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerPro
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
 
-    const remainingSlots = 4 - images.length
+    const remainingSlots = 8 - images.length
     if (files.length > remainingSlots) {
       toast.error(`You can only upload ${remainingSlots} more image${remainingSlots === 1 ? '' : 's'}`)
       return
@@ -80,12 +80,12 @@ export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerPro
             </label>
           </div>
           <Badge variant="secondary" className="text-xs">
-            {images.length}/4
+            {images.length}/8
           </Badge>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Upload up to 4 images that will be used in the grid based on difficulty
+          Upload up to 8 images that will be used in the grid based on difficulty
         </p>
 
         {images.length > 0 && (
@@ -113,10 +113,10 @@ export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerPro
           variant="outline"
           onClick={() => fileInputRef.current?.click()}
           className="w-full gap-2"
-          disabled={images.length >= 4}
+          disabled={images.length >= 8}
         >
           <Upload size={16} weight="bold" />
-          {images.length === 0 ? 'Upload Images' : `Upload More (${4 - images.length} slots)`}
+          {images.length === 0 ? 'Upload Images' : `Upload More (${8 - images.length} slots)`}
         </Button>
 
         <input

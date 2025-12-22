@@ -13,7 +13,7 @@ export function FloatingMenu({ isPlaying, onPlayPause, onShareClick }: FloatingM
   const [isExpanded, setIsExpanded] = useState(true)
 
   return (
-    <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-3">
+    <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center gap-3">
       <AnimatePresence>
         {isExpanded && (
           <motion.div

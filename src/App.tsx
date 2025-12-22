@@ -436,8 +436,8 @@ function App() {
         <header className="text-center space-y-2 py-4">
           <h1 className="text-5xl md:text-7xl font-bold text-primary tracking-tight" style={{ 
             textShadow: '0 2px 0 rgba(232, 116, 79, 0.2), 0 4px 12px rgba(232, 116, 79, 0.15)'
-        </div>
-      )}
+          }}>
+            SAY THE WORD
           </h1>
           <p className="text-3xl md:text-5xl font-semibold text-secondary" style={{
             textShadow: '0 2px 8px rgba(91, 163, 208, 0.15)'

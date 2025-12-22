@@ -289,7 +289,11 @@ function App() {
     const audioRef = customAudio ? customAudioRef : defaultAudioRef
     
     if (audioRef.current) {
-      audioRef.current.currentTime = 0
+      if (customAudio && currentBpmAnalysis && currentBpmAnalysis.silenceOffset) {
+        audioRef.current.currentTime = currentBpmAnalysis.silenceOffset
+      } else {
+        audioRef.current.currentTime = 0
+      }
       audioRef.current.playbackRate = calculatePlaybackSpeed(roundCount)
       audioRef.current.play().catch((error) => {
         console.error('Audio play error:', error)
@@ -396,7 +400,8 @@ function App() {
     
     if (customAudioRef.current) {
       customAudioRef.current.pause()
-      customAudioRef.current.currentTime = 0
+      const resetTime = currentBpmAnalysis?.silenceOffset || 0
+      customAudioRef.current.currentTime = resetTime
       customAudioRef.current.playbackRate = 1
     }
     if (defaultAudioRef.current) {

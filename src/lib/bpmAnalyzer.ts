@@ -7,6 +7,7 @@ export interface BpmSegment {
 export interface BpmAnalysisResult {
   segments: BpmSegment[]
   averageBpm: number
+  silenceOffset: number
 }
 
 export async function analyzeBpm(audioUrl: string): Promise<BpmAnalysisResult> {
@@ -16,6 +17,8 @@ export async function analyzeBpm(audioUrl: string): Promise<BpmAnalysisResult> {
     const response = await fetch(audioUrl)
     const arrayBuffer = await response.arrayBuffer()
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+    
+    const silenceOffset = detectSilenceOffset(audioBuffer)
     
     const offlineContext = new OfflineAudioContext(
       1,
@@ -50,7 +53,8 @@ export async function analyzeBpm(audioUrl: string): Promise<BpmAnalysisResult> {
     
     return {
       segments,
-      averageBpm: Math.round(averageBpm)
+      averageBpm: Math.round(averageBpm),
+      silenceOffset
     }
   } finally {
     await audioContext.close()
@@ -144,6 +148,31 @@ function analyzeBpmSegments(
   }
   
   return smoothSegments(segments)
+}
+
+function detectSilenceOffset(audioBuffer: AudioBuffer): number {
+  const sampleRate = audioBuffer.sampleRate
+  const channelData = audioBuffer.getChannelData(0)
+  
+  const silenceThreshold = 0.01
+  const windowSize = Math.floor(sampleRate * 0.01)
+  
+  for (let i = 0; i < channelData.length - windowSize; i += windowSize) {
+    let maxAmplitude = 0
+    
+    for (let j = 0; j < windowSize; j++) {
+      const amplitude = Math.abs(channelData[i + j])
+      if (amplitude > maxAmplitude) {
+        maxAmplitude = amplitude
+      }
+    }
+    
+    if (maxAmplitude > silenceThreshold) {
+      return i / sampleRate
+    }
+  }
+  
+  return 0
 }
 
 function smoothSegments(segments: BpmSegment[]): BpmSegment[] {

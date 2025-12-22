@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Upload, Image as ImageIcon, Smiley } from '@phosphor-icons/react'
 import { useRef } from 'react'
 import { toast } from 'sonner'
+import { validateImageFile } from '@/lib/security'
 
 interface ContentPickerProps {
   isOpen: boolean
@@ -29,17 +30,14 @@ export function ContentPicker({ isOpen, onClose, onSelect }: ContentPickerProps)
     onClose()
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select a valid image file')
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be smaller than 5MB')
+    // Validate image file
+    const validation = await validateImageFile(file)
+    if (!validation.valid) {
+      toast.error(validation.error || 'Invalid image file')
       return
     }
 

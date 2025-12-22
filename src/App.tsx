@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { getBpmAtTime, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
 import { FloatingMenu } from '@/components/FloatingMenu'
+import defaultAudio from '@/assets/audio/audio.mp3'
 
 interface GridItem {
   content: string
@@ -95,8 +96,6 @@ function generateGridFromPool(images: ImagePoolItem[], difficulty: Difficulty): 
   return result
 }
 
-const DEFAULT_AUDIO_URL = 'https://mblabspublic.blob.core.windows.net/public/audio.mp3'
-
 function App() {
   const [imagePool, setImagePool] = useKV<ImagePoolItem[]>('image-pool-v2', [])
   const [difficulty, setDifficulty] = useKV<Difficulty>('difficulty', 'medium')
@@ -163,7 +162,7 @@ function App() {
     return basePlaybackSpeed * speedMultiplier
   }
   
-  const activeAudioUrl = customAudio || DEFAULT_AUDIO_URL
+  const activeAudioUrl = customAudio || defaultAudio
 
   const generateGuid = (): string => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -681,7 +680,7 @@ function App() {
         </div>
       </div>
 
-      <audio ref={defaultAudioRef} src={DEFAULT_AUDIO_URL} preload="auto" loop />
+      <audio ref={defaultAudioRef} src={defaultAudio} preload="auto" loop />
       
       {customAudio && (
         <audio ref={customAudioRef} src={customAudio} preload="auto" loop />

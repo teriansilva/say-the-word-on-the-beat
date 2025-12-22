@@ -205,6 +205,11 @@ function App() {
       }
       
       index = (index + 1) % currentGridItems.length
+      
+      if (index === 0 && currentImagePool.length > 0) {
+        const newGrid = generateGridFromPool(currentImagePool, currentDifficulty)
+        setGridItems(newGrid)
+      }
     }
     
     playSequence()

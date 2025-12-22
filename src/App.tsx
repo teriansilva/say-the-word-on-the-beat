@@ -128,10 +128,19 @@ function App() {
     return gridItems ?? DEFAULT_ITEMS
   }, [currentImagePool, currentDifficulty, gridItems])
   
+  const baseBpm = 91
+  const basePlaybackSpeed = currentBpm / baseBpm
+  
   const calculateRoundBpm = (roundNumber: number) => {
     if (!currentIncreaseSpeed) return currentBpm
     const speedMultiplier = 1 + (0.05 * (roundNumber - 1))
     return currentBpm * speedMultiplier
+  }
+  
+  const calculatePlaybackSpeed = (roundNumber: number) => {
+    if (!currentIncreaseSpeed) return basePlaybackSpeed
+    const speedMultiplier = 1 + (0.05 * (roundNumber - 1))
+    return basePlaybackSpeed * speedMultiplier
   }
   
   const beatInterval = (60 / currentBpm) * 1000
@@ -252,8 +261,7 @@ function App() {
     
     if (audioRef.current) {
       audioRef.current.currentTime = 0
-      const speedMultiplier = currentIncreaseSpeed ? 1 + (0.05 * (roundCount - 1)) : 1
-      audioRef.current.playbackRate = speedMultiplier
+      audioRef.current.playbackRate = calculatePlaybackSpeed(roundCount)
       audioRef.current.play().catch((error) => {
         console.error('Audio play error:', error)
         toast.error('Failed to play audio')
@@ -283,9 +291,8 @@ function App() {
         setRevealedIndices(new Set())
         setCurrentRound(roundCount)
         
-        if (currentIncreaseSpeed && audioRef.current) {
-          const speedMultiplier = 1 + (0.05 * (roundCount - 1))
-          audioRef.current.playbackRate = speedMultiplier
+        if (audioRef.current) {
+          audioRef.current.playbackRate = calculatePlaybackSpeed(roundCount)
         }
         
         if (intervalRef.current) {

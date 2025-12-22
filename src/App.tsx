@@ -7,15 +7,31 @@ import { Card } from '@/components/ui/card'
 import { Toaster } from '@/components/ui/sonner'
 import { PlayCircle, PauseCircle, DownloadSimple, Plus } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { EmojiPicker } from '@/components/EmojiPicker'
+import { ContentPicker } from '@/components/ContentPicker'
 import { GridCard } from '@/components/GridCard'
 import { ExportOverlay } from '@/components/ExportOverlay'
+import { AudioUploader } from '@/components/AudioUploader'
 
-const DEFAULT_EMOJIS = ['🐱', '🧢', '🦇', '🍉', '🔔', '🧱', '🕐', '🪨']
+interface GridItem {
+  content: string
+  type: 'emoji' | 'image'
+}
+
+const DEFAULT_ITEMS: GridItem[] = [
+  { content: '🐱', type: 'emoji' },
+  { content: '🧢', type: 'emoji' },
+  { content: '🦇', type: 'emoji' },
+  { content: '🍉', type: 'emoji' },
+  { content: '🔔', type: 'emoji' },
+  { content: '🧱', type: 'emoji' },
+  { content: '🕐', type: 'emoji' },
+  { content: '🪨', type: 'emoji' },
+]
 
 function App() {
-  const [emojis, setEmojis] = useKV<string[]>('grid-emojis', DEFAULT_EMOJIS)
+  const [gridItems, setGridItems] = useKV<GridItem[]>('grid-items', DEFAULT_ITEMS)
   const [bpm, setBpm] = useKV<number>('bpm-value', 120)
+  const [customAudio, setCustomAudio] = useKV<string | null>('custom-audio', null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [isExporting, setIsExporting] = useState(false)
@@ -24,32 +40,40 @@ function App() {
   
   const intervalRef = useRef<number | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  const customAudioRef = useRef<HTMLAudioElement | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
   const currentBpm = bpm ?? 120
-  const currentEmojis = emojis ?? DEFAULT_EMOJIS
+  const currentGridItems = gridItems ?? DEFAULT_ITEMS
   const beatInterval = (60 / currentBpm) * 1000
 
   const playBeatSound = () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext()
+    if (customAudio && customAudioRef.current) {
+      customAudioRef.current.currentTime = 0
+      customAudioRef.current.play().catch(() => {
+        toast.error('Failed to play custom audio')
+      })
+    } else {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext()
+      }
+      
+      const ctx = audioContextRef.current
+      const oscillator = ctx.createOscillator()
+      const gainNode = ctx.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(ctx.destination)
+      
+      oscillator.frequency.value = 800
+      oscillator.type = 'sine'
+      
+      gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1)
+      
+      oscillator.start(ctx.currentTime)
+      oscillator.stop(ctx.currentTime + 0.1)
     }
-    
-    const ctx = audioContextRef.current
-    const oscillator = ctx.createOscillator()
-    const gainNode = ctx.createGain()
-    
-    oscillator.connect(gainNode)
-    gainNode.connect(ctx.destination)
-    
-    oscillator.frequency.value = 800
-    oscillator.type = 'sine'
-    
-    gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1)
-    
-    oscillator.start(ctx.currentTime)
-    oscillator.stop(ctx.currentTime + 0.1)
   }
 
   const startBeat = () => {
@@ -62,7 +86,7 @@ function App() {
       setActiveIndex(index)
       playBeatSound()
       
-      index = (index + 1) % currentEmojis.length
+      index = (index + 1) % currentGridItems.length
     }
     
     playSequence()
@@ -86,11 +110,11 @@ function App() {
     }
   }
 
-  const handleEmojiSelect = (emoji: string) => {
+  const handleContentSelect = (content: string, type: 'emoji' | 'image') => {
     if (selectedCardIndex !== null) {
-      setEmojis((current) => {
-        const updated = [...(current ?? DEFAULT_EMOJIS)]
-        updated[selectedCardIndex] = emoji
+      setGridItems((current) => {
+        const updated = [...(current ?? DEFAULT_ITEMS)]
+        updated[selectedCardIndex] = { content, type }
         return updated
       })
       setSelectedCardIndex(null)
@@ -168,7 +192,7 @@ function App() {
       
       let currentBeatIndex = 0
       const frameDuration = 1000 / 30
-      const totalBeats = currentEmojis.length * 2
+      const totalBeats = currentGridItems.length * 2
       let elapsedTime = 0
       
       const drawFrame = () => {
@@ -190,13 +214,13 @@ function App() {
         const gap = 20
         const cols = 4
         
-        currentEmojis.forEach((emoji, index) => {
+        currentGridItems.forEach((item, index) => {
           const col = index % cols
           const row = Math.floor(index / cols)
           const x = gridStartX + col * (cardSize + gap)
           const y = gridStartY + row * (cardSize + gap)
           
-          const isActive = index === (currentBeatIndex % currentEmojis.length)
+          const isActive = index === (currentBeatIndex % currentGridItems.length)
           
           if (isActive) {
             ctx.fillStyle = '#FFE066'
@@ -216,11 +240,18 @@ function App() {
           ctx.stroke()
           
           ctx.shadowBlur = 0
-          ctx.font = '96px Arial'
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'middle'
-          ctx.fillStyle = '#000000'
-          ctx.fillText(emoji, x + cardSize / 2, y + cardSize / 2 + 8)
+          
+          if (item.type === 'emoji') {
+            ctx.font = '96px Arial'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillStyle = '#000000'
+            ctx.fillText(item.content, x + cardSize / 2, y + cardSize / 2 + 8)
+          } else {
+            const img = new Image()
+            img.src = item.content
+            ctx.drawImage(img, x, y, cardSize, cardSize)
+          }
         })
         
         elapsedTime += frameDuration
@@ -303,10 +334,11 @@ function App() {
           ref={gridRef}
           className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto"
         >
-          {currentEmojis.map((emoji, index) => (
+          {currentGridItems.map((item, index) => (
             <GridCard
               key={index}
-              emoji={emoji}
+              content={item.content}
+              contentType={item.type}
               isActive={activeIndex === index}
               onClick={() => handleCardClick(index)}
             />
@@ -314,6 +346,12 @@ function App() {
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6 bg-card p-6 rounded-2xl border-2 border-border shadow-sm">
+          <AudioUploader
+            audioUrl={customAudio ?? null}
+            onAudioUpload={(url) => setCustomAudio(url)}
+            onAudioRemove={() => setCustomAudio(null)}
+          />
+          
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-lg font-semibold text-foreground">
@@ -368,15 +406,19 @@ function App() {
         </div>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>Click any card to change its emoji • Adjust tempo to match your pace</p>
+          <p>Click any card to change its content • Upload images or choose emojis • Add custom audio</p>
         </div>
       </div>
 
+      {customAudio && (
+        <audio ref={customAudioRef} src={customAudio} preload="auto" />
+      )}
+
       {selectedCardIndex !== null && (
-        <EmojiPicker
+        <ContentPicker
           isOpen={selectedCardIndex !== null}
           onClose={() => setSelectedCardIndex(null)}
-          onSelect={handleEmojiSelect}
+          onSelect={handleContentSelect}
         />
       )}
 

@@ -3,12 +3,13 @@ import { Plus } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 interface GridCardProps {
-  emoji: string
+  content: string
+  contentType: 'emoji' | 'image'
   isActive: boolean
   onClick: () => void
 }
 
-export function GridCard({ emoji, isActive, onClick }: GridCardProps) {
+export function GridCard({ content, contentType, isActive, onClick }: GridCardProps) {
   return (
     <Card
       className={cn(
@@ -20,18 +21,26 @@ export function GridCard({ emoji, isActive, onClick }: GridCardProps) {
       onClick={onClick}
     >
       <div className="relative w-full h-full flex items-center justify-center group">
-        {emoji ? (
-          <span className="text-6xl md:text-7xl select-none transition-transform group-hover:scale-110" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            {emoji}
-          </span>
+        {content ? (
+          contentType === 'emoji' ? (
+            <span className="text-6xl md:text-7xl select-none transition-transform group-hover:scale-110" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              {content}
+            </span>
+          ) : (
+            <img
+              src={content}
+              alt="Custom content"
+              className="w-full h-full object-cover transition-transform group-hover:scale-110"
+            />
+          )
         ) : (
           <div className="flex flex-col items-center justify-center text-muted-foreground">
             <Plus size={48} weight="bold" className="mb-2" />
-            <span className="text-sm font-medium">Add Emoji</span>
+            <span className="text-sm font-medium">Add Content</span>
           </div>
         )}
         
-        {emoji && (
+        {content && (
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
             <span className="text-xs font-semibold text-foreground/70 bg-background/90 px-3 py-1.5 rounded-full shadow-sm">
               Click to change

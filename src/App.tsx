@@ -266,6 +266,7 @@ function App() {
       index = (index + 1) % currentGridItems.length
     }
     
+    playSequence()
     intervalRef.current = window.setInterval(playSequence, beatInterval)
   }
 

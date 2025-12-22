@@ -25,6 +25,18 @@ export function FloatingMenu({ isPlaying, onPlayPause, onShareClick }: FloatingM
           >
             <Button
               size="lg"
+              className="h-16 w-16 rounded-2xl shadow-lg text-base font-bold p-0"
+              onClick={onPlayPause}
+            >
+              {isPlaying ? (
+                <PauseCircle size={36} weight="fill" />
+              ) : (
+                <PlayCircle size={36} weight="fill" />
+              )}
+            </Button>
+            
+            <Button
+              size="lg"
               variant="outline"
               className="h-12 w-12 rounded-xl p-0 bg-[#FFDD00] hover:bg-[#FFDD00]/90 border-2 border-[#000000]"
               onClick={() => window.open('https://buymeacoffee.com/teriansilva', '_blank')}
@@ -44,32 +56,18 @@ export function FloatingMenu({ isPlaying, onPlayPause, onShareClick }: FloatingM
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col gap-3">
-        <Button
-          size="lg"
-          variant="outline"
-          className="h-12 w-12 rounded-xl p-0 bg-card border-2 shadow-lg"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? (
-            <CaretRight size={24} weight="bold" />
-          ) : (
-            <CaretLeft size={24} weight="bold" />
-          )}
-        </Button>
-        
-        <Button
-          size="lg"
-          className="h-16 w-16 rounded-2xl shadow-2xl text-base font-bold p-0"
-          onClick={onPlayPause}
-        >
-          {isPlaying ? (
-            <PauseCircle size={36} weight="fill" />
-          ) : (
-            <PlayCircle size={36} weight="fill" />
-          )}
-        </Button>
-      </div>
+      <Button
+        size="lg"
+        variant="outline"
+        className="h-12 w-12 rounded-xl p-0 bg-card border-2 shadow-lg"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {isExpanded ? (
+          <CaretRight size={24} weight="bold" />
+        ) : (
+          <CaretLeft size={24} weight="bold" />
+        )}
+      </Button>
     </div>
   )
 }

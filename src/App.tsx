@@ -368,13 +368,21 @@ function App() {
           toast.success('Loaded game configuration!')
           hasLoadedFromUrl.current = true
         } catch (error) {
-          toast.error('Invalid configuration format')
           console.error('Failed to parse config:', error)
+          if (error instanceof SyntaxError) {
+            toast.error('Invalid configuration format - corrupted data')
+          } else {
+            toast.error('Failed to load configuration')
+          }
         }
       }
     } catch (error) {
-      toast.error('Failed to load configuration')
       console.error('Load error:', error)
+      if (error instanceof TypeError) {
+        toast.error('Network error loading shared configuration')
+      } else {
+        toast.error('Failed to load configuration')
+      }
     }
   }
 

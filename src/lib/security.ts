@@ -31,9 +31,9 @@ const FILE_SIGNATURES: Record<string, number[][]> = {
   'image/jpeg': [[0xFF, 0xD8, 0xFF]],
   'image/png': [[0x89, 0x50, 0x4E, 0x47]],
   'image/gif': [[0x47, 0x49, 0x46, 0x38]],
-  'image/webp': [[0x52, 0x49, 0x46, 0x46]], // RIFF header
+  'image/webp': [[0x52, 0x49, 0x46, 0x46]], // RIFF header - validated separately for WEBP signature
   'image/bmp': [[0x42, 0x4D]],
-  'audio/mpeg': [[0xFF, 0xFB], [0xFF, 0xF3], [0xFF, 0xF2], [0x49, 0x44, 0x33]], // MP3 and ID3
+  'audio/mpeg': [[0xFF, 0xFB], [0xFF, 0xF3], [0xFF, 0xF2]], // MP3 frame sync
   'audio/wav': [[0x52, 0x49, 0x46, 0x46]], // RIFF header
   'audio/ogg': [[0x4F, 0x67, 0x67, 0x53]], // OggS
 };
@@ -52,6 +52,19 @@ async function verifyFileSignature(file: File, expectedType: string): Promise<bo
     reader.onload = (e) => {
       const arr = new Uint8Array(e.target?.result as ArrayBuffer);
       
+      // Special handling for WebP to distinguish from other RIFF formats
+      if (expectedType === 'image/webp') {
+        // Check RIFF header first
+        if (arr[0] === 0x52 && arr[1] === 0x49 && arr[2] === 0x46 && arr[3] === 0x46) {
+          // Check for WEBP signature at bytes 8-11
+          const isWebP = arr[8] === 0x57 && arr[9] === 0x45 && arr[10] === 0x42 && arr[11] === 0x50;
+          resolve(isWebP);
+          return;
+        }
+        resolve(false);
+        return;
+      }
+      
       // Check if file starts with any of the valid signatures
       const matches = signatures.some(signature => {
         return signature.every((byte, index) => arr[index] === byte);
@@ -61,7 +74,7 @@ async function verifyFileSignature(file: File, expectedType: string): Promise<bo
     };
     reader.onerror = () => resolve(false);
     
-    // Read first 12 bytes for signature verification
+    // Read first 12 bytes for signature verification (enough for WEBP check)
     reader.readAsArrayBuffer(file.slice(0, 12));
   });
 }

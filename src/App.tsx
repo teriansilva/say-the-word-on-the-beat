@@ -12,6 +12,7 @@ import { ExportOverlay } from '@/components/ExportOverlay'
 import { AudioUploader } from '@/components/AudioUploader'
 import { ImagePoolManager } from '@/components/ImagePoolManager'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { ShareLink } from '@/components/ShareLink'
 
 interface GridItem {
   content: string
@@ -100,11 +101,13 @@ function App() {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [exportProgress, setExportProgress] = useState(0)
+  const [shareUrl, setShareUrl] = useState('')
   
   const intervalRef = useRef<number | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const customAudioRef = useRef<HTMLAudioElement | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
+  const hasLoadedFromUrl = useRef(false)
 
   const currentBpm = bpm ?? 120
   const currentDifficulty = difficulty ?? 'medium'
@@ -116,6 +119,49 @@ function App() {
     return gridItems ?? DEFAULT_ITEMS
   }, [currentImagePool, currentDifficulty, gridItems])
   const beatInterval = (60 / currentBpm) * 1000
+
+  const generateShareLink = () => {
+    try {
+      const config = {
+        bpm: currentBpm,
+        difficulty: currentDifficulty,
+        images: currentImagePool,
+        audio: customAudio
+      }
+      
+      const encoded = btoa(JSON.stringify(config))
+      const url = new URL(window.location.href)
+      url.searchParams.set('config', encoded)
+      
+      setShareUrl(url.toString())
+      toast.success('Share link generated!')
+    } catch (error) {
+      toast.error('Failed to generate share link')
+    }
+  }
+
+  const loadFromUrl = () => {
+    if (hasLoadedFromUrl.current) return
+    
+    try {
+      const urlParams = new URLSearchParams(window.location.search)
+      const configParam = urlParams.get('config')
+      
+      if (configParam) {
+        const decoded = JSON.parse(atob(configParam))
+        
+        if (decoded.bpm) setBpm(decoded.bpm)
+        if (decoded.difficulty) setDifficulty(decoded.difficulty)
+        if (decoded.images && Array.isArray(decoded.images)) setImagePool(decoded.images)
+        if (decoded.audio) setCustomAudio(decoded.audio)
+        
+        toast.success('Loaded shared game configuration!')
+        hasLoadedFromUrl.current = true
+      }
+    } catch (error) {
+      console.error('Failed to load from URL:', error)
+    }
+  }
 
   const playBeatSound = () => {
     if (!audioContextRef.current) {
@@ -370,6 +416,10 @@ function App() {
   }
 
   useEffect(() => {
+    loadFromUrl()
+  }, [])
+
+  useEffect(() => {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
@@ -423,6 +473,11 @@ function App() {
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6 bg-card p-6 rounded-2xl border-2 border-border shadow-sm">
+          <ShareLink 
+            shareUrl={shareUrl}
+            onGenerate={generateShareLink}
+          />
+          
           <ImagePoolManager
             images={currentImagePool}
             onImagesChange={(images) => setImagePool(images)}

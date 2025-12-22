@@ -47,12 +47,22 @@ This is an interactive creative tool with several interconnected features (grid 
 - **Progression**: Click Upload → File picker opens → Select audio file (MP3, WAV, etc.) → Audio loads → User can preview with play button → Audio is used in beat playback and video export
 - **Success criteria**: Accepts common audio formats, file size limit (10MB), audio persists between sessions, clear option to remove and revert to default
 
+### 6. Share Link Generation
+- **Functionality**: Users can generate a shareable URL that encodes their complete game configuration (images, BPM, difficulty, custom audio)
+- **Purpose**: Enables users to share their custom game setup with others, who can instantly load the same configuration
+- **Trigger**: User clicks "Generate Share Link" button in controls section
+- **Progression**: Click Generate → Configuration encoded to URL → Shareable link displayed → User clicks Copy → Link copied to clipboard → Recipient opens link → Game loads with shared configuration
+- **Success criteria**: All settings (BPM, difficulty, images, audio) persist through URL, configuration loads automatically on page load, copy-to-clipboard works reliably, clear visual feedback when link is generated and copied
+
 ## Edge Case Handling
 - **Empty Grid**: If no emojis selected, provide default emoji set or show friendly prompt to add emojis
 - **Mid-playback Edits**: Pause playback automatically if user clicks to edit a card during beat sequence
 - **BPM Extremes**: Clamp BPM to sensible range (60-180) to prevent unusably slow/fast tempos
 - **Export During Playback**: Disable export button while beat is playing to prevent conflicts
 - **Browser Compatibility**: Gracefully handle browsers without MediaRecorder API with clear message
+- **Share Link Too Long**: If configuration exceeds reasonable URL length limits, show helpful error message
+- **Invalid Share URL**: If decoding shared configuration fails, show error message and load default settings
+- **Missing Images in Share**: If shared link references images that can't be loaded, fall back to default emojis
 
 ## Design Direction
 The design should evoke the fun, addictive energy of viral TikTok challenges mixed with the precision of music production tools. Think: colorful, bouncy, immediately understandable, with satisfying micro-interactions that make you want to keep playing. The aesthetic should feel modern and social-media-native with bold typography, vibrant colors, and smooth animations that react to the beat.
@@ -113,7 +123,7 @@ Animations should pulse with the rhythm of the challenge itself - snappy, precis
 - **Export Button States**: Disabled during playback (gray), Ready (blue with download icon), Exporting (loading spinner, "Recording...")
 - **Audio Upload States**: Empty (default metronome), Loaded (custom audio with preview controls), Error (clear error message)
 
-**Icon Selection**:
+- **Icon Selection**:
 - Play/Pause: `PlayCircle` / `PauseCircle` from Phosphor Icons (filled variant for prominence)
 - Export: `DownloadSimple` from Phosphor Icons
 - Add/Edit: `Plus` / `Pencil` from Phosphor Icons (subtle, shown on card hover)
@@ -123,6 +133,8 @@ Animations should pulse with the rhythm of the challenge itself - snappy, precis
 - Remove: `X` from Phosphor Icons for removing custom audio
 - BPM: `Metronome` icon next to slider
 - Grid Size: `GridFour` for grid configuration
+- Share: `ShareNetwork` from Phosphor Icons for share link generation
+- Copy: `Copy` / `Check` from Phosphor Icons for clipboard feedback
 
 **Spacing**:
 - Container padding: `p-8` (2rem) on desktop, `p-4` (1rem) on mobile

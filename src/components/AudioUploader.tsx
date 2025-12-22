@@ -46,7 +46,7 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
       try {
         const bpmAnalysis = await analyzeBpm(dataUrl)
         onAudioUpload(dataUrl, bpmAnalysis)
-        toast.success(`Audio analyzed! Average BPM: ${bpmAnalysis.averageBpm}`)
+        toast.success(`Audio uploaded! Average BPM: ${bpmAnalysis.averageBpm}`)
       } catch (error) {
         console.error('BPM analysis failed:', error)
         onAudioUpload(dataUrl, null)

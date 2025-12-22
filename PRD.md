@@ -19,19 +19,19 @@ This is an interactive creative tool with several interconnected features (grid 
 - **Progression**: Click card → Content picker opens → User selects tab (Emoji or Image) → Choose emoji or upload image → Card updates with chosen content → Ready for beat sync
 - **Success criteria**: Users can easily add/change emojis or upload images (up to 5MB), grid displays clearly, changes persist between sessions
 
-### 2. BPM Control
-- **Functionality**: Adjustable beats-per-minute slider with default set to ~120 BPM (typical for the challenge)
-- **Purpose**: Allows customization of beat speed to match user's speaking pace or preference
-- **Trigger**: User interacts with BPM slider or input field
-- **Progression**: Adjust slider → BPM value updates → Beat timing recalculates → Audio/visual sync adjusts in real-time
-- **Success criteria**: Smooth BPM adjustment (60-180 range), clear visual feedback of current tempo, beat stays in sync
+### 2. BPM Control & Audio Analysis
+- **Functionality**: Adjustable beats-per-minute slider with intelligent BPM detection for custom audio files. The system automatically analyzes uploaded audio to detect tempo changes throughout the track and uses these values during gameplay.
+- **Purpose**: Allows customization of beat speed to match user's speaking pace or preference, while automatically synchronizing to the actual tempo of custom audio files
+- **Trigger**: User interacts with BPM slider or uploads custom audio with automatic analysis
+- **Progression**: Upload audio → System analyzes BPM throughout track → Average BPM displayed and set → User can adjust tempo multiplier → System applies multiplier to detected BPM values → Beat timing adapts dynamically during playback based on current audio position
+- **Success criteria**: Accurate BPM detection (within ±5 BPM), smooth tempo adjustment (60-180 range), dynamic beat sync adapts to tempo changes in audio, clear visual feedback of analysis progress and current tempo
 
 ### 3. Beat Synchronization & Playback
-- **Functionality**: Visual and audio beat indicator that highlights each card in sequence on the beat, with support for custom audio files
-- **Purpose**: Core mechanic - shows users when to say each word/name to stay on beat
+- **Functionality**: Visual and audio beat indicator that highlights each card in sequence on the beat, with support for custom audio files and dynamic tempo adaptation. The system continuously monitors playback position and adjusts beat intervals based on detected BPM changes throughout the track.
+- **Purpose**: Core mechanic - shows users when to say each word/name to stay on beat, even when the tempo changes
 - **Trigger**: User clicks "Play" button to start the beat sequence
-- **Progression**: Click Play → Metronome/custom audio starts → Cards highlight sequentially on beat → User says word when card highlights → Visual/audio feedback confirms timing
-- **Success criteria**: Precise timing (<50ms accuracy), clear visual highlight state, satisfying click/tick sound on each beat or custom audio playback
+- **Progression**: Click Play → Metronome/custom audio starts → System tracks audio position → BPM adjusted dynamically based on current position → Cards highlight sequentially on beat → User says word when card highlights → Visual/audio feedback confirms timing
+- **Success criteria**: Precise timing (<50ms accuracy), dynamic adaptation to tempo changes, clear visual highlight state, satisfying click/tick sound on each beat or custom audio playback with accurate sync throughout entire track
 
 ### 4. Video Export
 - **Functionality**: Records the grid animation synchronized with audio and exports as downloadable video file, including custom images and audio
@@ -40,19 +40,19 @@ This is an interactive creative tool with several interconnected features (grid 
 - **Progression**: Click Export → Recording countdown (3-2-1) → Beat sequence plays through grid → Recording completes → Video file downloads automatically
 - **Success criteria**: Video captures smooth animation with emojis and images, audio is synchronized (default or custom), file is reasonably sized (<10MB), works in modern browsers
 
-### 5. Custom Audio Upload
-- **Functionality**: Users can upload their own audio files to replace the default metronome sound
-- **Purpose**: Allows personalization and matching to specific challenge variations or creative preferences
+### 5. Custom Audio Upload & Analysis
+- **Functionality**: Users can upload their own audio files which are automatically analyzed for BPM patterns throughout the track. The system detects tempo changes and uses these values to synchronize card reveals precisely with the audio's actual rhythm.
+- **Purpose**: Allows personalization and matching to specific challenge variations, while ensuring accurate synchronization even with songs that have tempo changes
 - **Trigger**: User clicks "Upload Custom Audio" button in controls section
-- **Progression**: Click Upload → File picker opens → Select audio file (MP3, WAV, etc.) → Audio loads → User can preview with play button → Audio is used in beat playback and video export
-- **Success criteria**: Accepts common audio formats, file size limit (10MB), audio persists between sessions, clear option to remove and revert to default
+- **Progression**: Click Upload → File picker opens → Select audio file (MP3, WAV, etc.) → Audio loads → System analyzes BPM patterns → Average BPM detected and displayed → User can preview with play button → Audio and BPM analysis used in beat playback and video export
+- **Success criteria**: Accepts common audio formats, file size limit (10MB), accurate BPM detection completes within 5 seconds, detected tempo displayed clearly, audio persists between sessions, clear option to remove and revert to default, manual BPM adjustment available if automatic detection needs fine-tuning
 
 ### 6. Share Link Generation
-- **Functionality**: Users can generate a shareable URL that encodes their complete game configuration (images, BPM, difficulty, custom audio)
-- **Purpose**: Enables users to share their custom game setup with others, who can instantly load the same configuration
+- **Functionality**: Users can generate a shareable URL that encodes their complete game configuration (images, BPM, difficulty, custom audio, and BPM analysis data)
+- **Purpose**: Enables users to share their custom game setup with others, who can instantly load the same configuration including detected tempo patterns
 - **Trigger**: User clicks "Generate Share Link" button in controls section
-- **Progression**: Click Generate → Configuration encoded to URL → Shareable link displayed → User clicks Copy → Link copied to clipboard → Recipient opens link → Game loads with shared configuration
-- **Success criteria**: All settings (BPM, difficulty, images, audio) persist through URL, configuration loads automatically on page load, copy-to-clipboard works reliably, clear visual feedback when link is generated and copied
+- **Progression**: Click Generate → Configuration (including BPM analysis) encoded to URL → Shareable link displayed → User clicks Copy → Link copied to clipboard → Recipient opens link → Game loads with shared configuration and tempo analysis → Playback uses exact same timing as original
+- **Success criteria**: All settings (BPM, difficulty, images, audio, tempo analysis) persist through URL, configuration loads automatically on page load, copy-to-clipboard works reliably, clear visual feedback when link is generated and copied, shared tempo analysis provides identical playback experience
 
 ## Edge Case Handling
 - **Empty Grid**: If no emojis selected, provide default emoji set or show friendly prompt to add emojis
@@ -63,6 +63,9 @@ This is an interactive creative tool with several interconnected features (grid 
 - **Share Link Too Long**: If configuration exceeds reasonable URL length limits, show helpful error message
 - **Invalid Share URL**: If decoding shared configuration fails, show error message and load default settings
 - **Missing Images in Share**: If shared link references images that can't be loaded, fall back to default emojis
+- **BPM Analysis Failure**: If automatic BPM detection fails, fall back to manual BPM setting with clear notification
+- **Variable Tempo Audio**: Handle songs with tempo changes by analyzing in segments and adjusting playback timing dynamically
+- **Audio Analysis Timeout**: If analysis takes too long (>10 seconds), allow user to cancel and use manual BPM
 
 ## Design Direction
 The design should evoke the fun, addictive energy of viral TikTok challenges mixed with the precision of music production tools. Think: colorful, bouncy, immediately understandable, with satisfying micro-interactions that make you want to keep playing. The aesthetic should feel modern and social-media-native with bold typography, vibrant colors, and smooth animations that react to the beat.

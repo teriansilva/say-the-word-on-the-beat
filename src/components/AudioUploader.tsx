@@ -2,13 +2,14 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
-import { Upload, Waveform, X, ArrowSquareOut } from '@phosphor-icons/react'
-import { useRef } from 'react'
+import { Upload, Waveform, X, ArrowSquareOut, Spinner } from '@phosphor-icons/react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { analyzeBpm, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
 
 interface AudioUploaderProps {
   audioUrl: string | null
-  onAudioUpload: (audioUrl: string) => void
+  onAudioUpload: (audioUrl: string, bpmAnalysis: BpmAnalysisResult | null) => void
   onAudioRemove: () => void
   bpm: number
   onBpmChange: (bpm: number) => void
@@ -19,8 +20,9 @@ interface AudioUploaderProps {
 
 export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onBpmChange, baseBpm, onBaseBpmChange, isPlaying }: AudioUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -35,13 +37,27 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
     }
 
     const reader = new FileReader()
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const dataUrl = event.target?.result as string
-      onAudioUpload(dataUrl)
-      toast.success('Custom audio uploaded!')
+      
+      setIsAnalyzing(true)
+      toast.info('Analyzing audio BPM...')
+      
+      try {
+        const bpmAnalysis = await analyzeBpm(dataUrl)
+        onAudioUpload(dataUrl, bpmAnalysis)
+        toast.success(`Audio analyzed! Average BPM: ${bpmAnalysis.averageBpm}`)
+      } catch (error) {
+        console.error('BPM analysis failed:', error)
+        onAudioUpload(dataUrl, null)
+        toast.warning('Audio uploaded, but BPM analysis failed. Using manual BPM.')
+      } finally {
+        setIsAnalyzing(false)
+      }
     }
     reader.onerror = () => {
       toast.error('Failed to read audio file')
+      setIsAnalyzing(false)
     }
     reader.readAsDataURL(file)
   }
@@ -87,9 +103,19 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
           variant="outline"
           onClick={() => fileInputRef.current?.click()}
           className="w-full gap-2"
+          disabled={isAnalyzing}
         >
-          <Upload size={16} weight="bold" />
-          {audioUrl ? 'Replace Audio' : 'Upload Custom Audio'}
+          {isAnalyzing ? (
+            <>
+              <Spinner size={16} weight="bold" className="animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <Upload size={16} weight="bold" />
+              {audioUrl ? 'Replace Audio' : 'Upload Custom Audio'}
+            </>
+          )}
         </Button>
 
         <input
@@ -110,6 +136,9 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
                 {baseBpm} BPM
               </Badge>
             </div>
+            <p className="text-xs text-muted-foreground">
+              This value is automatically detected but can be adjusted if needed
+            </p>
             <Slider
               value={[baseBpm]}
               onValueChange={([value]) => onBaseBpmChange(value)}
@@ -126,7 +155,7 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
               className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
             >
               <ArrowSquareOut size={14} weight="bold" />
-              Find your audio's BPM on TuneBat
+              Verify BPM on TuneBat
             </a>
           </div>
         )}

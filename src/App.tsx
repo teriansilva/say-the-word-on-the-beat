@@ -14,6 +14,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ShareModal } from '@/components/ShareModal'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { getBpmAtTime, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
 
 interface GridItem {
   content: string
@@ -101,6 +102,7 @@ function App() {
   const [bpm, setBpm] = useKV<number>('bpm-value', 91)
   const [baseBpm, setBaseBpm] = useKV<number>('base-bpm', 91)
   const [customAudio, setCustomAudio] = useKV<string | null>('custom-audio', null)
+  const [bpmAnalysis, setBpmAnalysis] = useKV<BpmAnalysisResult | null>('bpm-analysis', null)
   const [rounds, setRounds] = useKV<number>('rounds', 1)
   const [increaseSpeed, setIncreaseSpeed] = useKV<boolean>('increase-speed', false)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -116,6 +118,7 @@ function App() {
   const defaultAudioRef = useRef<HTMLAudioElement | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const hasLoadedFromUrl = useRef(false)
+  const bpmCheckIntervalRef = useRef<number | null>(null)
 
   const currentBpm = bpm ?? 91
   const currentBaseBpm = baseBpm ?? 91
@@ -123,6 +126,7 @@ function App() {
   const currentImagePool = imagePool ?? []
   const currentRounds = rounds ?? 1
   const currentIncreaseSpeed = increaseSpeed ?? false
+  const currentBpmAnalysis = bpmAnalysis ?? null
   const currentGridItems = useMemo(() => {
     if (currentImagePool.length > 0) {
       return generateGridFromPool(currentImagePool, currentDifficulty)
@@ -133,10 +137,19 @@ function App() {
   const baseBpmValue = customAudio ? currentBaseBpm : 91
   const basePlaybackSpeed = currentBpm / baseBpmValue
   
-  const calculateRoundBpm = (roundNumber: number) => {
-    if (!currentIncreaseSpeed) return currentBpm
+  const calculateRoundBpm = (roundNumber: number, audioTime?: number) => {
+    let effectiveBpm = currentBpm
+    
+    if (currentBpmAnalysis && audioTime !== undefined) {
+      const detectedBpm = getBpmAtTime(currentBpmAnalysis.segments, audioTime)
+      const speedMultiplier = currentBpm / currentBaseBpm
+      effectiveBpm = detectedBpm * speedMultiplier
+    }
+    
+    if (!currentIncreaseSpeed) return effectiveBpm
+    
     const speedMultiplier = 1 + (0.05 * (roundNumber - 1))
-    return currentBpm * speedMultiplier
+    return effectiveBpm * speedMultiplier
   }
   
   const calculatePlaybackSpeed = (roundNumber: number) => {
@@ -145,7 +158,6 @@ function App() {
     return basePlaybackSpeed * speedMultiplier
   }
   
-  const beatInterval = (60 / currentBpm) * 1000
   const activeAudioUrl = customAudio || DEFAULT_AUDIO_URL
 
   const generateGuid = (): string => {
@@ -164,6 +176,7 @@ function App() {
         difficulty: currentDifficulty,
         images: currentImagePool,
         audio: customAudio,
+        bpmAnalysis: currentBpmAnalysis,
         rounds: currentRounds,
         increaseSpeed: currentIncreaseSpeed
       }
@@ -196,6 +209,7 @@ function App() {
           difficulty: Difficulty
           images: string[]
           audio: string | null
+          bpmAnalysis?: BpmAnalysisResult | null
           rounds: number
           increaseSpeed?: boolean
         }>(`share:${shareId}`)
@@ -206,6 +220,7 @@ function App() {
           if (config.difficulty) setDifficulty(config.difficulty)
           if (config.images && Array.isArray(config.images)) setImagePool(config.images)
           if (config.audio) setCustomAudio(config.audio)
+          if (config.bpmAnalysis) setBpmAnalysis(config.bpmAnalysis)
           if (config.rounds) setRounds(config.rounds)
           if (config.increaseSpeed !== undefined) setIncreaseSpeed(config.increaseSpeed)
           
@@ -222,6 +237,7 @@ function App() {
         if (decoded.difficulty) setDifficulty(decoded.difficulty)
         if (decoded.images && Array.isArray(decoded.images)) setImagePool(decoded.images)
         if (decoded.audio) setCustomAudio(decoded.audio)
+        if (decoded.bpmAnalysis) setBpmAnalysis(decoded.bpmAnalysis)
         if (decoded.rounds) setRounds(decoded.rounds)
         if (decoded.increaseSpeed !== undefined) setIncreaseSpeed(decoded.increaseSpeed)
         
@@ -262,6 +278,7 @@ function App() {
     setRevealedIndices(new Set())
     let index = -1
     let roundCount = 1
+    let currentIntervalBpm = currentBpm
     
     const audioRef = customAudio ? customAudioRef : defaultAudioRef
     
@@ -274,8 +291,30 @@ function App() {
       })
     }
     
-    const getIntervalForRound = (round: number) => {
-      const roundBpm = calculateRoundBpm(round)
+    const updateBpmFromAudio = () => {
+      if (audioRef.current && currentBpmAnalysis) {
+        const audioTime = audioRef.current.currentTime / audioRef.current.playbackRate
+        const newBpm = calculateRoundBpm(roundCount, audioTime)
+        
+        if (Math.abs(newBpm - currentIntervalBpm) > 1) {
+          currentIntervalBpm = newBpm
+          
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current)
+          }
+          
+          const newInterval = (60 / currentIntervalBpm) * 1000
+          intervalRef.current = window.setInterval(playSequence, newInterval)
+        }
+      }
+    }
+    
+    if (currentBpmAnalysis) {
+      bpmCheckIntervalRef.current = window.setInterval(updateBpmFromAudio, 100)
+    }
+    
+    const getIntervalForRound = (round: number, audioTime?: number) => {
+      const roundBpm = calculateRoundBpm(round, audioTime)
       return (60 / roundBpm) * 1000
     }
     
@@ -301,10 +340,12 @@ function App() {
           audioRef.current.playbackRate = calculatePlaybackSpeed(roundCount)
         }
         
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current)
+        if (!currentBpmAnalysis) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current)
+          }
+          intervalRef.current = window.setInterval(playSequence, getIntervalForRound(roundCount))
         }
-        intervalRef.current = window.setInterval(playSequence, getIntervalForRound(roundCount))
       }
       
       if (index === currentGridItems.length - 1) {
@@ -316,7 +357,9 @@ function App() {
     }
     
     playSequence()
-    intervalRef.current = window.setInterval(playSequence, getIntervalForRound(roundCount))
+    
+    const initialInterval = getIntervalForRound(roundCount, 0)
+    intervalRef.current = window.setInterval(playSequence, initialInterval)
   }
 
   const stopBeat = () => {
@@ -329,6 +372,10 @@ function App() {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
+    }
+    if (bpmCheckIntervalRef.current) {
+      clearInterval(bpmCheckIntervalRef.current)
+      bpmCheckIntervalRef.current = null
     }
     
     if (customAudioRef.current) {
@@ -359,6 +406,9 @@ function App() {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
+      }
+      if (bpmCheckIntervalRef.current) {
+        clearInterval(bpmCheckIntervalRef.current)
       }
     }
   }, [])
@@ -517,8 +567,20 @@ function App() {
           
           <AudioUploader
             audioUrl={customAudio ?? null}
-            onAudioUpload={(url) => setCustomAudio(url)}
-            onAudioRemove={() => setCustomAudio(null)}
+            onAudioUpload={(url, analysis) => {
+              setCustomAudio(url)
+              setBpmAnalysis(analysis)
+              if (analysis) {
+                setBaseBpm(analysis.averageBpm)
+                setBpm(analysis.averageBpm)
+              }
+            }}
+            onAudioRemove={() => {
+              setCustomAudio(null)
+              setBpmAnalysis(null)
+              setBaseBpm(91)
+              setBpm(91)
+            }}
             bpm={currentBpm}
             onBpmChange={(value) => setBpm(value)}
             baseBpm={currentBaseBpm}

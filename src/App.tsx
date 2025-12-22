@@ -48,32 +48,25 @@ function App() {
   const beatInterval = (60 / currentBpm) * 1000
 
   const playBeatSound = () => {
-    if (customAudio && customAudioRef.current) {
-      customAudioRef.current.currentTime = 0
-      customAudioRef.current.play().catch(() => {
-        toast.error('Failed to play custom audio')
-      })
-    } else {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext()
-      }
-      
-      const ctx = audioContextRef.current
-      const oscillator = ctx.createOscillator()
-      const gainNode = ctx.createGain()
-      
-      oscillator.connect(gainNode)
-      gainNode.connect(ctx.destination)
-      
-      oscillator.frequency.value = 800
-      oscillator.type = 'sine'
-      
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1)
-      
-      oscillator.start(ctx.currentTime)
-      oscillator.stop(ctx.currentTime + 0.1)
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext()
     }
+    
+    const ctx = audioContextRef.current
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
+    
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
+    
+    oscillator.frequency.value = 800
+    oscillator.type = 'sine'
+    
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1)
+    
+    oscillator.start(ctx.currentTime)
+    oscillator.stop(ctx.currentTime + 0.1)
   }
 
   const startBeat = () => {
@@ -82,9 +75,18 @@ function App() {
     setIsPlaying(true)
     let index = 0
     
+    if (customAudio && customAudioRef.current) {
+      customAudioRef.current.currentTime = 0
+      customAudioRef.current.play().catch(() => {
+        toast.error('Failed to play custom audio')
+      })
+    }
+    
     const playSequence = () => {
       setActiveIndex(index)
-      playBeatSound()
+      if (!customAudio) {
+        playBeatSound()
+      }
       
       index = (index + 1) % currentGridItems.length
     }
@@ -99,6 +101,10 @@ function App() {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
+    }
+    if (customAudio && customAudioRef.current) {
+      customAudioRef.current.pause()
+      customAudioRef.current.currentTime = 0
     }
   }
 

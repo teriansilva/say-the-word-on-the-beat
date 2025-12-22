@@ -472,15 +472,15 @@ function App() {
                   onValueChange={(value) => {
                     if (value) setDifficulty(value as Difficulty)
                   }}
-                  className="justify-start"
+                  className="w-full"
                 >
-                  <ToggleGroupItem value="easy" className="text-sm">
+                  <ToggleGroupItem value="easy" className="text-sm flex-1">
                     Easy
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="medium" className="text-sm">
+                  <ToggleGroupItem value="medium" className="text-sm flex-1">
                     Medium
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="hard" className="text-sm">
+                  <ToggleGroupItem value="hard" className="text-sm flex-1">
                     Hard
                   </ToggleGroupItem>
                 </ToggleGroup>

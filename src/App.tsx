@@ -461,7 +461,7 @@ function App() {
                   Round {currentRound} of {currentRounds}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  {Math.round(calculateRoundBpm(currentRound, customAudioRef.current?.currentTime || defaultAudioRef.current?.currentTime))} BPM
+                  {Math.round(calculateRoundBpm(currentRound, currentBpmAnalysis ? (customAudioRef.current?.currentTime || defaultAudioRef.current?.currentTime) : undefined))} BPM
                 </span>
               </div>
               

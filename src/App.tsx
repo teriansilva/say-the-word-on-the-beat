@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Toaster } from '@/components/ui/sonner'
-import { PlayCircle, PauseCircle, ShareNetwork } from '@phosphor-icons/react'
+import { PlayCircle, PauseCircle, ShareNetwork, Coffee } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { GridCard } from '@/components/GridCard'
 import { AudioUploader } from '@/components/AudioUploader'
@@ -693,6 +693,15 @@ function App() {
 
       {!isFullscreen && (
         <div className="fixed bottom-8 right-8 flex flex-col gap-3 z-50">
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-14 w-14 rounded-full shadow-2xl p-0 bg-[#FFDD00] hover:bg-[#FFDD00]/90 border-2 border-[#000000]"
+            onClick={() => window.open('https://buymeacoffee.com/teriansilva', '_blank')}
+          >
+            <Coffee size={28} weight="fill" className="text-[#000000]" />
+          </Button>
+          
           <Button
             size="lg"
             variant="secondary"

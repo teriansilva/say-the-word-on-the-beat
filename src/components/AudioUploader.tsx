@@ -145,15 +145,6 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
             <p className="text-xs text-muted-foreground">
               Automatically detected base tempo for this audio file
             </p>
-            <a
-              href="https://tunebat.com/Analyzer"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
-            >
-              <ArrowSquareOut size={14} weight="bold" />
-              Verify BPM on TuneBat
-            </a>
           </div>
         )}
 

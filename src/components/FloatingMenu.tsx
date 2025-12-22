@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { PlayCircle, PauseCircle, ShareNetwork, Coffee, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { PlayCircle, PauseCircle, ShareNetwork, Coffee, CaretDown, CaretUp } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface FloatingMenuProps {
@@ -13,13 +13,13 @@ export function FloatingMenu({ isPlaying, onPlayPause, onShareClick }: FloatingM
   const [isExpanded, setIsExpanded] = useState(true)
 
   return (
-    <div className="fixed bottom-8 right-8 z-50 flex items-end gap-3">
+    <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center gap-3">
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            initial={{ opacity: 0, x: 20, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             className="flex flex-col gap-3 bg-card border-2 border-border rounded-2xl p-3 shadow-2xl"
           >
@@ -63,9 +63,9 @@ export function FloatingMenu({ isPlaying, onPlayPause, onShareClick }: FloatingM
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {isExpanded ? (
-          <CaretRight size={24} weight="bold" />
+          <CaretDown size={24} weight="bold" />
         ) : (
-          <CaretLeft size={24} weight="bold" />
+          <CaretUp size={24} weight="bold" />
         )}
       </Button>
     </div>

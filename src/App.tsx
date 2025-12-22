@@ -371,7 +371,7 @@ function App() {
               </div>
               
               <div 
-                className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-4xl"
+                className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-6xl w-full"
               >
                 {currentGridItems.map((item, index) => (
                   <GridCard
@@ -411,21 +411,6 @@ function App() {
             ON THE BEAT
           </p>
         </header>
-
-        <div 
-          ref={gridRef}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto"
-        >
-          {currentGridItems.map((item, index) => (
-            <GridCard
-              key={index}
-              content={item.content}
-              contentType={item.type}
-              isActive={false}
-              hasBeenRevealed={false}
-            />
-          ))}
-        </div>
 
         <div className="max-w-2xl mx-auto space-y-6 bg-card p-6 rounded-2xl border-2 border-border shadow-sm">
           <ImagePoolManager

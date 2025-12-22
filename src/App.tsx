@@ -5,9 +5,8 @@ import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Toaster } from '@/components/ui/sonner'
-import { PlayCircle, PauseCircle, DownloadSimple, Plus } from '@phosphor-icons/react'
+import { PlayCircle, PauseCircle, DownloadSimple } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { ContentPicker } from '@/components/ContentPicker'
 import { GridCard } from '@/components/GridCard'
 import { ExportOverlay } from '@/components/ExportOverlay'
 import { AudioUploader } from '@/components/AudioUploader'
@@ -101,7 +100,6 @@ function App() {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [exportProgress, setExportProgress] = useState(0)
-  const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null)
   
   const intervalRef = useRef<number | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -188,34 +186,7 @@ function App() {
     }
   }
 
-  const handleContentSelect = (content: string, type: 'emoji' | 'image') => {
-    if (selectedCardIndex !== null) {
-      if (currentImagePool.length > 0) {
-        toast.info('Disable image pool mode to customize individual cards')
-        setSelectedCardIndex(null)
-        return
-      }
-      
-      setGridItems((current) => {
-        const updated = [...(current ?? DEFAULT_ITEMS)]
-        updated[selectedCardIndex] = { content, type }
-        return updated
-      })
-      setSelectedCardIndex(null)
-    }
-  }
 
-  const handleCardClick = (index: number) => {
-    if (currentImagePool.length > 0) {
-      toast.info('Individual cards cannot be edited in image pool mode')
-      return
-    }
-    
-    if (isPlaying) {
-      stopBeat()
-    }
-    setSelectedCardIndex(index)
-  }
 
   const handleRegenerateGrid = () => {
     if (currentImagePool.length === 0) {
@@ -447,7 +418,6 @@ function App() {
               content={item.content}
               contentType={item.type}
               isActive={activeIndex === index}
-              onClick={() => handleCardClick(index)}
             />
           ))}
         </div>
@@ -571,24 +541,13 @@ function App() {
 
         <div className="text-center text-sm text-muted-foreground">
           <p>
-            {currentImagePool.length === 0 
-              ? 'Click any card to change its content • Upload images to the pool for difficulty modes'
-              : 'Upload images to the pool • Choose difficulty • Cards auto-generate based on your settings'
-            }
+            Upload images to the pool • Choose difficulty • Cards auto-generate based on your settings
           </p>
         </div>
       </div>
 
       {customAudio && (
         <audio ref={customAudioRef} src={customAudio} preload="auto" />
-      )}
-
-      {selectedCardIndex !== null && (
-        <ContentPicker
-          isOpen={selectedCardIndex !== null}
-          onClose={() => setSelectedCardIndex(null)}
-          onSelect={handleContentSelect}
-        />
       )}
 
       <ExportOverlay 

@@ -142,7 +142,7 @@ function App() {
   const calculateRoundBpm = (roundNumber: number, audioTime?: number) => {
     let effectiveBpm = currentBpm
     
-    if (currentBpmAnalysis && audioTime !== undefined) {
+    if (customAudio && currentBpmAnalysis && audioTime !== undefined) {
       const detectedBpm = getBpmAtTime(currentBpmAnalysis.segments, audioTime)
       const speedMultiplier = currentBpm / currentBaseBpm
       effectiveBpm = detectedBpm * speedMultiplier
@@ -298,7 +298,7 @@ function App() {
     }
     
     const updateBpmFromAudio = () => {
-      if (audioRef.current && currentBpmAnalysis) {
+      if (audioRef.current && customAudio && currentBpmAnalysis) {
         const audioTime = audioRef.current.currentTime / audioRef.current.playbackRate
         const newBpm = calculateRoundBpm(roundCount, audioTime)
         
@@ -315,7 +315,7 @@ function App() {
       }
     }
     
-    if (currentBpmAnalysis) {
+    if (customAudio && currentBpmAnalysis) {
       bpmCheckIntervalRef.current = window.setInterval(updateBpmFromAudio, 100)
     }
     
@@ -346,7 +346,7 @@ function App() {
           audioRef.current.playbackRate = calculatePlaybackSpeed(roundCount)
         }
         
-        if (!currentBpmAnalysis) {
+        if (!(customAudio && currentBpmAnalysis)) {
           if (intervalRef.current) {
             clearInterval(intervalRef.current)
           }
@@ -461,7 +461,7 @@ function App() {
                   Round {currentRound} of {currentRounds}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  {Math.round(calculateRoundBpm(currentRound, currentBpmAnalysis ? (customAudioRef.current?.currentTime || defaultAudioRef.current?.currentTime) : undefined))} BPM
+                  {Math.round(calculateRoundBpm(currentRound, (customAudio && currentBpmAnalysis) ? (customAudioRef.current?.currentTime || defaultAudioRef.current?.currentTime) : undefined))} BPM
                 </span>
               </div>
               

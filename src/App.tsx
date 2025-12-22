@@ -12,6 +12,8 @@ import { AudioUploader } from '@/components/AudioUploader'
 import { ImagePoolManager } from '@/components/ImagePoolManager'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ShareModal } from '@/components/ShareModal'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 interface GridItem {
   content: string
@@ -99,6 +101,7 @@ function App() {
   const [bpm, setBpm] = useKV<number>('bpm-value', 91)
   const [customAudio, setCustomAudio] = useKV<string | null>('custom-audio', null)
   const [rounds, setRounds] = useKV<number>('rounds', 1)
+  const [increaseSpeed, setIncreaseSpeed] = useKV<boolean>('increase-speed', false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
@@ -117,12 +120,20 @@ function App() {
   const currentDifficulty = difficulty ?? 'medium'
   const currentImagePool = imagePool ?? []
   const currentRounds = rounds ?? 1
+  const currentIncreaseSpeed = increaseSpeed ?? false
   const currentGridItems = useMemo(() => {
     if (currentImagePool.length > 0) {
       return generateGridFromPool(currentImagePool, currentDifficulty)
     }
     return gridItems ?? DEFAULT_ITEMS
   }, [currentImagePool, currentDifficulty, gridItems])
+  
+  const calculateRoundBpm = (roundNumber: number) => {
+    if (!currentIncreaseSpeed) return currentBpm
+    const speedMultiplier = 1 + (0.05 * (roundNumber - 1))
+    return currentBpm * speedMultiplier
+  }
+  
   const beatInterval = (60 / currentBpm) * 1000
   const activeAudioUrl = customAudio || DEFAULT_AUDIO_URL
 
@@ -141,7 +152,8 @@ function App() {
         difficulty: currentDifficulty,
         images: currentImagePool,
         audio: customAudio,
-        rounds: currentRounds
+        rounds: currentRounds,
+        increaseSpeed: currentIncreaseSpeed
       }
       
       const guid = generateGuid()
@@ -172,6 +184,7 @@ function App() {
           images: string[]
           audio: string | null
           rounds: number
+          increaseSpeed?: boolean
         }>(`share:${shareId}`)
         
         if (config) {
@@ -180,6 +193,7 @@ function App() {
           if (config.images && Array.isArray(config.images)) setImagePool(config.images)
           if (config.audio) setCustomAudio(config.audio)
           if (config.rounds) setRounds(config.rounds)
+          if (config.increaseSpeed !== undefined) setIncreaseSpeed(config.increaseSpeed)
           
           toast.success('Loaded shared game configuration!')
           hasLoadedFromUrl.current = true
@@ -194,6 +208,7 @@ function App() {
         if (decoded.images && Array.isArray(decoded.images)) setImagePool(decoded.images)
         if (decoded.audio) setCustomAudio(decoded.audio)
         if (decoded.rounds) setRounds(decoded.rounds)
+        if (decoded.increaseSpeed !== undefined) setIncreaseSpeed(decoded.increaseSpeed)
         
         toast.success('Loaded shared game configuration!')
         hasLoadedFromUrl.current = true
@@ -237,10 +252,17 @@ function App() {
     
     if (audioRef.current) {
       audioRef.current.currentTime = 0
+      const speedMultiplier = currentIncreaseSpeed ? 1 + (0.05 * (roundCount - 1)) : 1
+      audioRef.current.playbackRate = speedMultiplier
       audioRef.current.play().catch((error) => {
         console.error('Audio play error:', error)
         toast.error('Failed to play audio')
       })
+    }
+    
+    const getIntervalForRound = (round: number) => {
+      const roundBpm = calculateRoundBpm(round)
+      return (60 / roundBpm) * 1000
     }
     
     const playSequence = () => {
@@ -260,6 +282,16 @@ function App() {
         
         setRevealedIndices(new Set())
         setCurrentRound(roundCount)
+        
+        if (currentIncreaseSpeed && audioRef.current) {
+          const speedMultiplier = 1 + (0.05 * (roundCount - 1))
+          audioRef.current.playbackRate = speedMultiplier
+        }
+        
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current)
+        }
+        intervalRef.current = window.setInterval(playSequence, getIntervalForRound(roundCount))
       }
       
       if (index === currentGridItems.length - 1) {
@@ -271,7 +303,7 @@ function App() {
     }
     
     playSequence()
-    intervalRef.current = window.setInterval(playSequence, beatInterval)
+    intervalRef.current = window.setInterval(playSequence, getIntervalForRound(roundCount))
   }
 
   const stopBeat = () => {
@@ -289,10 +321,12 @@ function App() {
     if (customAudioRef.current) {
       customAudioRef.current.pause()
       customAudioRef.current.currentTime = 0
+      customAudioRef.current.playbackRate = 1
     }
     if (defaultAudioRef.current) {
       defaultAudioRef.current.pause()
       defaultAudioRef.current.currentTime = 0
+      defaultAudioRef.current.playbackRate = 1
     }
   }
 
@@ -495,6 +529,25 @@ function App() {
               disabled={isPlaying}
             />
           </div>
+          
+          <Card className="p-4 border-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="increase-speed" className="text-sm font-semibold text-foreground cursor-pointer">
+                  Increase speed with each round
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Audio and cards speed up 5% per round
+                </p>
+              </div>
+              <Switch
+                id="increase-speed"
+                checked={currentIncreaseSpeed}
+                onCheckedChange={(checked) => setIncreaseSpeed(checked)}
+                disabled={isPlaying}
+              />
+            </div>
+          </Card>
           
           <div className="space-y-3">
             <div className="flex items-center justify-between">

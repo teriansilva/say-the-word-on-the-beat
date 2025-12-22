@@ -99,6 +99,7 @@ function App() {
   const [difficulty, setDifficulty] = useKV<Difficulty>('difficulty', 'medium')
   const [gridItems, setGridItems] = useKV<GridItem[]>('grid-items', DEFAULT_ITEMS)
   const [bpm, setBpm] = useKV<number>('bpm-value', 91)
+  const [baseBpm, setBaseBpm] = useKV<number>('base-bpm', 91)
   const [customAudio, setCustomAudio] = useKV<string | null>('custom-audio', null)
   const [rounds, setRounds] = useKV<number>('rounds', 1)
   const [increaseSpeed, setIncreaseSpeed] = useKV<boolean>('increase-speed', false)
@@ -117,6 +118,7 @@ function App() {
   const hasLoadedFromUrl = useRef(false)
 
   const currentBpm = bpm ?? 91
+  const currentBaseBpm = baseBpm ?? 91
   const currentDifficulty = difficulty ?? 'medium'
   const currentImagePool = imagePool ?? []
   const currentRounds = rounds ?? 1
@@ -128,8 +130,8 @@ function App() {
     return gridItems ?? DEFAULT_ITEMS
   }, [currentImagePool, currentDifficulty, gridItems])
   
-  const baseBpm = 91
-  const basePlaybackSpeed = currentBpm / baseBpm
+  const baseBpmValue = customAudio ? currentBaseBpm : 91
+  const basePlaybackSpeed = currentBpm / baseBpmValue
   
   const calculateRoundBpm = (roundNumber: number) => {
     if (!currentIncreaseSpeed) return currentBpm
@@ -158,6 +160,7 @@ function App() {
     try {
       const config = {
         bpm: currentBpm,
+        baseBpm: currentBaseBpm,
         difficulty: currentDifficulty,
         images: currentImagePool,
         audio: customAudio,
@@ -189,6 +192,7 @@ function App() {
       if (shareId) {
         const config = await window.spark.kv.get<{
           bpm: number
+          baseBpm?: number
           difficulty: Difficulty
           images: string[]
           audio: string | null
@@ -198,6 +202,7 @@ function App() {
         
         if (config) {
           if (config.bpm) setBpm(config.bpm)
+          if (config.baseBpm) setBaseBpm(config.baseBpm)
           if (config.difficulty) setDifficulty(config.difficulty)
           if (config.images && Array.isArray(config.images)) setImagePool(config.images)
           if (config.audio) setCustomAudio(config.audio)
@@ -213,6 +218,7 @@ function App() {
         const decoded = JSON.parse(atob(configParam))
         
         if (decoded.bpm) setBpm(decoded.bpm)
+        if (decoded.baseBpm) setBaseBpm(decoded.baseBpm)
         if (decoded.difficulty) setDifficulty(decoded.difficulty)
         if (decoded.images && Array.isArray(decoded.images)) setImagePool(decoded.images)
         if (decoded.audio) setCustomAudio(decoded.audio)
@@ -515,6 +521,8 @@ function App() {
             onAudioRemove={() => setCustomAudio(null)}
             bpm={currentBpm}
             onBpmChange={(value) => setBpm(value)}
+            baseBpm={currentBaseBpm}
+            onBaseBpmChange={(value) => setBaseBpm(value)}
             isPlaying={isPlaying}
           />
           

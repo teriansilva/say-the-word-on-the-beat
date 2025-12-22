@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
-import { Upload, Waveform, X } from '@phosphor-icons/react'
+import { Upload, Waveform, X, ArrowSquareOut } from '@phosphor-icons/react'
 import { useRef } from 'react'
 import { toast } from 'sonner'
 
@@ -12,10 +12,12 @@ interface AudioUploaderProps {
   onAudioRemove: () => void
   bpm: number
   onBpmChange: (bpm: number) => void
+  baseBpm: number
+  onBaseBpmChange: (baseBpm: number) => void
   isPlaying: boolean
 }
 
-export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onBpmChange, isPlaying }: AudioUploaderProps) {
+export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onBpmChange, baseBpm, onBaseBpmChange, isPlaying }: AudioUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,6 +99,37 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
           onChange={handleFileUpload}
           className="hidden"
         />
+
+        {audioUrl && (
+          <div className="pt-3 border-t border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-foreground">
+                Base BPM
+              </label>
+              <Badge variant="secondary" className="text-sm font-bold">
+                {baseBpm} BPM
+              </Badge>
+            </div>
+            <Slider
+              value={[baseBpm]}
+              onValueChange={([value]) => onBaseBpmChange(value)}
+              min={60}
+              max={200}
+              step={1}
+              className="w-full"
+              disabled={isPlaying}
+            />
+            <a
+              href="https://tunebat.com/Analyzer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+            >
+              <ArrowSquareOut size={14} weight="bold" />
+              Find your audio's BPM on TuneBat
+            </a>
+          </div>
+        )}
 
         <div className="pt-3 border-t border-border space-y-3">
           <div className="flex items-center justify-between">

@@ -225,7 +225,7 @@ function App() {
     
     setIsPlaying(true)
     setRevealedIndices(new Set())
-    let index = 0
+    let index = -1
     let roundCount = 0
     
     if (customAudio && customAudioRef.current) {
@@ -236,6 +236,8 @@ function App() {
     }
     
     const playSequence = () => {
+      index = (index + 1) % currentGridItems.length
+      
       if (index === 0) {
         if (roundCount >= currentRounds) {
           stopBeat()
@@ -262,8 +264,6 @@ function App() {
       if (!customAudio) {
         playBeatSound()
       }
-      
-      index = (index + 1) % currentGridItems.length
     }
     
     playSequence()

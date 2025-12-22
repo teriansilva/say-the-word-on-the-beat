@@ -95,7 +95,7 @@ function App() {
   const [difficulty, setDifficulty] = useKV<Difficulty>('difficulty', 'medium')
   const [gridItems, setGridItems] = useKV<GridItem[]>('grid-items', DEFAULT_ITEMS)
   const [bpm, setBpm] = useKV<number>('bpm-value', 120)
-  const [customAudio, setCustomAudio] = useKV<string | null>('custom-audio', 'https://mblabspublic.blob.core.windows.net/public/audio.mp3')
+  const [customAudio, setCustomAudio] = useKV<string | null>('custom-audio', null)
   const [rounds, setRounds] = useKV<number>('rounds', 1)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
@@ -107,6 +107,7 @@ function App() {
   
   const intervalRef = useRef<number | null>(null)
   const customAudioRef = useRef<HTMLAudioElement | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const hasLoadedFromUrl = useRef(false)
 
@@ -121,6 +122,28 @@ function App() {
     return gridItems ?? DEFAULT_ITEMS
   }, [currentImagePool, currentDifficulty, gridItems])
   const beatInterval = (60 / currentBpm) * 1000
+
+  const playMetronomeClick = () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext()
+    }
+    
+    const ctx = audioContextRef.current
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
+    
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
+    
+    oscillator.frequency.value = 1000
+    oscillator.type = 'sine'
+    
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1)
+    
+    oscillator.start(ctx.currentTime)
+    oscillator.stop(ctx.currentTime + 0.1)
+  }
 
   const generateGuid = (): string => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -229,7 +252,7 @@ function App() {
     let index = -1
     let roundCount = 1
     
-    if (customAudioRef.current) {
+    if (customAudio && customAudioRef.current) {
       customAudioRef.current.currentTime = 0
       customAudioRef.current.play().catch(() => {
         toast.error('Failed to play audio')
@@ -259,6 +282,10 @@ function App() {
         roundCount++
       }
       
+      if (!customAudio) {
+        playMetronomeClick()
+      }
+      
       setActiveIndex(index)
       setRevealedIndices(prev => new Set([...prev, index]))
     }
@@ -278,7 +305,7 @@ function App() {
       clearInterval(intervalRef.current)
       intervalRef.current = null
     }
-    if (customAudioRef.current) {
+    if (customAudio && customAudioRef.current) {
       customAudioRef.current.pause()
       customAudioRef.current.currentTime = 0
     }

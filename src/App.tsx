@@ -224,7 +224,6 @@ function App() {
     if (isPlaying) return
     
     setIsPlaying(true)
-    setCurrentRound(0)
     setRevealedIndices(new Set())
     let index = 0
     let roundCount = 0
@@ -267,7 +266,6 @@ function App() {
       index = (index + 1) % currentGridItems.length
     }
     
-    playSequence()
     intervalRef.current = window.setInterval(playSequence, beatInterval)
   }
 

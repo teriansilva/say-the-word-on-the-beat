@@ -123,17 +123,16 @@ export async function validateAudioFile(file: File): Promise<{ valid: boolean; e
  * Sanitize text input to prevent XSS
  */
 export function sanitizeText(input: string): string {
-  // Remove any HTML tags
-  const stripped = input.replace(/<[^>]*>/g, '');
-  
-  // Encode special HTML characters
-  return stripped
+  // First encode all special HTML characters to prevent any HTML interpretation
+  let sanitized = input
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
     .replace(/\//g, '&#x2F;');
+  
+  return sanitized;
 }
 
 /**

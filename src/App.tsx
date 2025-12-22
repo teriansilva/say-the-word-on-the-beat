@@ -105,6 +105,7 @@ function App() {
   const [bpmAnalysis, setBpmAnalysis] = useKV<BpmAnalysisResult | null>('bpm-analysis', null)
   const [rounds, setRounds] = useKV<number>('rounds', 1)
   const [increaseSpeed, setIncreaseSpeed] = useKV<boolean>('increase-speed', false)
+  const [speedIncreasePercent, setSpeedIncreasePercent] = useKV<number>('speed-increase-percent', 5)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
@@ -126,6 +127,7 @@ function App() {
   const currentImagePool = imagePool ?? []
   const currentRounds = rounds ?? 1
   const currentIncreaseSpeed = increaseSpeed ?? false
+  const currentSpeedIncreasePercent = speedIncreasePercent ?? 5
   const currentBpmAnalysis = bpmAnalysis ?? null
   const currentGridItems = useMemo(() => {
     if (currentImagePool.length > 0) {
@@ -148,13 +150,13 @@ function App() {
     
     if (!currentIncreaseSpeed) return effectiveBpm
     
-    const speedMultiplier = 1 + (0.05 * (roundNumber - 1))
+    const speedMultiplier = 1 + ((currentSpeedIncreasePercent / 100) * (roundNumber - 1))
     return effectiveBpm * speedMultiplier
   }
   
   const calculatePlaybackSpeed = (roundNumber: number) => {
     if (!currentIncreaseSpeed) return basePlaybackSpeed
-    const speedMultiplier = 1 + (0.05 * (roundNumber - 1))
+    const speedMultiplier = 1 + ((currentSpeedIncreasePercent / 100) * (roundNumber - 1))
     return basePlaybackSpeed * speedMultiplier
   }
   
@@ -178,7 +180,8 @@ function App() {
         audio: customAudio,
         bpmAnalysis: currentBpmAnalysis,
         rounds: currentRounds,
-        increaseSpeed: currentIncreaseSpeed
+        increaseSpeed: currentIncreaseSpeed,
+        speedIncreasePercent: currentSpeedIncreasePercent
       }
       
       const guid = generateGuid()
@@ -212,6 +215,7 @@ function App() {
           bpmAnalysis?: BpmAnalysisResult | null
           rounds: number
           increaseSpeed?: boolean
+          speedIncreasePercent?: number
         }>(`share:${shareId}`)
         
         if (config) {
@@ -223,6 +227,7 @@ function App() {
           if (config.bpmAnalysis) setBpmAnalysis(config.bpmAnalysis)
           if (config.rounds) setRounds(config.rounds)
           if (config.increaseSpeed !== undefined) setIncreaseSpeed(config.increaseSpeed)
+          if (config.speedIncreasePercent !== undefined) setSpeedIncreasePercent(config.speedIncreasePercent)
           
           toast.success('Loaded shared game configuration!')
           hasLoadedFromUrl.current = true
@@ -240,6 +245,7 @@ function App() {
         if (decoded.bpmAnalysis) setBpmAnalysis(decoded.bpmAnalysis)
         if (decoded.rounds) setRounds(decoded.rounds)
         if (decoded.increaseSpeed !== undefined) setIncreaseSpeed(decoded.increaseSpeed)
+        if (decoded.speedIncreasePercent !== undefined) setSpeedIncreasePercent(decoded.speedIncreasePercent)
         
         toast.success('Loaded shared game configuration!')
         hasLoadedFromUrl.current = true
@@ -550,21 +556,48 @@ function App() {
           )}
           
           <Card className="p-4 border-2">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label htmlFor="increase-speed" className="text-sm font-semibold text-foreground cursor-pointer">
-                  Increase speed with each round
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Audio and cards speed up 5% per round
-                </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="increase-speed" className="text-sm font-semibold text-foreground cursor-pointer">
+                    Increase speed with each round
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Audio and cards speed up per round
+                  </p>
+                </div>
+                <Switch
+                  id="increase-speed"
+                  checked={currentIncreaseSpeed}
+                  onCheckedChange={(checked) => setIncreaseSpeed(checked)}
+                  disabled={isPlaying}
+                />
               </div>
-              <Switch
-                id="increase-speed"
-                checked={currentIncreaseSpeed}
-                onCheckedChange={(checked) => setIncreaseSpeed(checked)}
-                disabled={isPlaying}
-              />
+              
+              {currentIncreaseSpeed && (
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-foreground">
+                      Speed increase per round
+                    </label>
+                    <Badge variant="secondary" className="text-sm font-bold">
+                      {currentSpeedIncreasePercent}%
+                    </Badge>
+                  </div>
+                  <Slider
+                    value={[currentSpeedIncreasePercent]}
+                    onValueChange={([value]) => setSpeedIncreasePercent(value)}
+                    min={1}
+                    max={10}
+                    step={1}
+                    className="w-full"
+                    disabled={isPlaying}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Each round increases by {currentSpeedIncreasePercent}% (1-10%)
+                  </p>
+                </div>
+              )}
             </div>
           </Card>
           

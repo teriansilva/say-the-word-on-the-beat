@@ -2,6 +2,13 @@
 
 This guide explains how to deploy the Say the Word on Beat application using Docker and Docker Compose.
 
+## Architecture Overview
+
+The application consists of three services:
+- **web**: Nginx serving the React frontend (port 8091)
+- **api**: Node.js/Express backend API (port 3001)
+- **mongo**: MongoDB database for persistent storage
+
 ## Prerequisites
 
 - Docker Engine 20.10.0 or higher
@@ -9,76 +16,119 @@ This guide explains how to deploy the Say the Word on Beat application using Doc
 
 ## Quick Start
 
-### Using Docker Compose (Recommended)
+### Development Mode (Recommended for local development)
 
-1. **Build and start the application:**
-   ```bash
-   docker-compose up -d
-   ```
+```bash
+docker-compose -f docker-compose.dev.yml up -d --build
+```
 
-2. **Access the application:**
-   Open your browser and navigate to `http://localhost:8080`
+**Features:**
+- Debug port 9229 exposed for Node.js debugging
+- Source code mounted for live changes
+- MongoDB exposed on port 27017 for direct access
+- Verbose Express logging enabled
+- No health checks (faster startup)
 
-3. **Stop the application:**
-   ```bash
-   docker-compose down
-   ```
+### Production Mode
 
-### Using Docker CLI
+```bash
+docker-compose -f docker-compose.prod.yml up -d --build
+```
 
-1. **Build the Docker image:**
-   ```bash
-   docker build -t say-the-word-on-beat:latest .
-   ```
+**Features:**
+- Health checks on all services
+- `restart: always` policy
+- No debug ports or volumes exposed
+- `NODE_ENV=production`
+- MongoDB not exposed externally
 
-2. **Run the container:**
-   ```bash
-   docker run -d -p 8080:80 --name say-the-word-on-beat say-the-word-on-beat:latest
-   ```
+### Default (Simple Development)
 
-3. **Stop the container:**
-   ```bash
-   docker stop say-the-word-on-beat
-   docker rm say-the-word-on-beat
-   ```
+```bash
+docker-compose up -d --build
+```
+
+## Accessing the Application
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Web App | http://localhost:8091 | Main application |
+| API | http://localhost:3001 | Backend REST API |
+| API Health | http://localhost:3001/api/health | Health check endpoint |
+| MongoDB | mongodb://localhost:27017 | Database (dev only) |
+
+## Docker Compose Files
+
+| File | Purpose |
+|------|---------|
+| `docker-compose.yml` | Default minimal development setup |
+| `docker-compose.dev.yml` | Full development with debugging |
+| `docker-compose.prod.yml` | Production-ready configuration |
+
+## Stop the Application
+
+```bash
+# Stop containers (keeps data)
+docker-compose down
+
+# Stop and remove volumes (deletes all data)
+docker-compose down -v
+```
 
 ## Docker Architecture
 
-The application uses a multi-stage Docker build:
+The application uses a multi-stage Docker build for both frontend and backend:
 
-1. **Builder Stage**: Uses Node.js 18 Alpine to build the application with Vite
-2. **Production Stage**: Uses Nginx Alpine to serve the static files
+### Frontend (web)
+1. **Builder Stage**: Uses Node.js 20 Alpine to build the React app with Vite
+2. **Production Stage**: Uses Nginx Alpine to serve static files and proxy API requests
 
-This approach results in:
-- Small image size (~25-30MB)
-- Fast startup times
-- Production-optimized serving with Nginx
+### Backend (api)
+- Node.js 20 Alpine running Express.js
+- Connects to MongoDB for data persistence
+- Handles settings, images, audio, and share configurations
+
+### Database (mongo)
+- MongoDB 7 for persistent storage
+- Data stored in Docker volume `mongo-data`
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/sessions` | Create anonymous session |
+| GET/PUT | `/api/settings/:key` | Get/set user settings |
+| GET/POST/DELETE | `/api/images` | Manage uploaded images |
+| GET/POST/DELETE | `/api/audio` | Manage uploaded audio |
+| GET/POST | `/api/shares/:guid` | Share configurations |
+| GET | `/api/health` | Health check |
 
 ## Configuration
 
 ### Port Configuration
 
-By default, the application is exposed on port 8080. To change this, edit the `docker-compose.yml` file:
+Default ports:
+- Web: 8091
+- API: 3001
+- MongoDB: 27017 (dev only)
+
+To change ports, edit the appropriate docker-compose file:
 
 ```yaml
 ports:
-  - "YOUR_PORT:80"  # Change YOUR_PORT to your desired port
+  - "YOUR_PORT:80"  # Web
+  - "YOUR_PORT:3001"  # API
 ```
 
 ### Environment Variables
 
-The application runs in production mode. To add custom environment variables:
-
-1. Create a `.env` file in the project root
-2. Add your variables:
-   ```
-   VITE_API_URL=https://api.example.com
-   ```
-3. Update `docker-compose.yml` to include the env file:
-   ```yaml
-   env_file:
-     - .env
-   ```
+| Variable | Service | Description |
+|----------|---------|-------------|
+| `NODE_ENV` | web, api | `development` or `production` |
+| `PORT` | api | API server port (default: 3001) |
+| `MONGODB_URI` | api | MongoDB connection string |
+| `CORS_ORIGIN` | api | Allowed CORS origin |
+| `DEBUG` | api | Debug logging (dev only) |
 
 ## Health Checks
 
@@ -99,74 +149,46 @@ The application uses a custom Nginx configuration (`nginx.conf`) that includes:
 - **Security headers** (X-Frame-Options, CSP, etc.)
 - **Static asset caching** (1 year for immutable assets)
 - **SPA routing support** (all routes redirect to index.html)
+- **API proxy** to Node.js backend (`/api/*` → `http://api:3001`)
 - **Health check endpoint** at `/health`
 
 To modify the Nginx configuration, edit `nginx.conf` and rebuild the image.
 
-## Production Deployment
-
-For production environments:
-
-1. **Use a reverse proxy** (like Traefik or another Nginx instance) for HTTPS termination
-2. **Set up monitoring** using the health check endpoint
-3. **Configure resource limits** in docker-compose.yml:
-   ```yaml
-   deploy:
-     resources:
-       limits:
-         cpus: '1.0'
-         memory: 512M
-       reservations:
-         cpus: '0.5'
-         memory: 256M
-   ```
-
-4. **Enable logging** with a logging driver:
-   ```yaml
-   logging:
-     driver: "json-file"
-     options:
-       max-size: "10m"
-       max-file: "3"
-   ```
-
 ## Troubleshooting
 
-### View application logs
+### View logs for all services
 ```bash
 docker-compose logs -f
 ```
 
+### View logs for specific service
+```bash
+docker-compose logs -f api
+docker-compose logs -f web
+docker-compose logs -f mongo
+```
+
 ### Access container shell
 ```bash
+docker-compose exec api sh
 docker-compose exec web sh
+docker-compose exec mongo mongosh
 ```
 
 ### Rebuild after code changes
 ```bash
-docker-compose up -d --build
+docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
-### Check health status
+### Check MongoDB data
 ```bash
-docker inspect say-the-word-on-beat | grep -A 10 Health
+docker-compose exec mongo mongosh saytheword --eval "db.settings.find()"
 ```
 
-## Updating the Application
-
-1. Pull the latest code
-2. Rebuild and restart:
-   ```bash
-   docker-compose down
-   docker-compose up -d --build
-   ```
-
-## Cleanup
-
-Remove all containers, images, and volumes:
+### Reset database
 ```bash
 docker-compose down -v
-docker rmi say-the-word-on-beat:latest
+docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
 ## Security Considerations

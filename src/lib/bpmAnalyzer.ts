@@ -102,7 +102,7 @@ function analyzeBpmSegments(
   sampleRate: number
 ): BpmSegment[] {
   const segments: BpmSegment[] = []
-  const segmentDuration = 10
+  const segmentDuration = 8
   const numSegments = Math.max(1, Math.ceil(totalDuration / segmentDuration))
   
   for (let i = 0; i < numSegments; i++) {

@@ -113,6 +113,7 @@ function App() {
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [countdown, setCountdown] = useState<number | null>(null)
+  const [displayBpm, setDisplayBpm] = useState<number>(91)
   
   const intervalRef = useRef<number | null>(null)
   const customAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -284,7 +285,6 @@ function App() {
     setRevealedIndices(new Set())
     let index = -1
     let roundCount = 1
-    let currentIntervalBpm = currentBpm
     
     const audioRef = customAudio ? customAudioRef : defaultAudioRef
     
@@ -297,10 +297,16 @@ function App() {
       })
     }
     
+    const initialBpm = calculateRoundBpm(roundCount, 0)
+    setDisplayBpm(Math.round(initialBpm))
+    let currentIntervalBpm = initialBpm
+    
     const updateBpmFromAudio = () => {
       if (audioRef.current && customAudio && currentBpmAnalysis) {
         const audioTime = audioRef.current.currentTime / audioRef.current.playbackRate
         const newBpm = calculateRoundBpm(roundCount, audioTime)
+        
+        setDisplayBpm(Math.round(newBpm))
         
         if (Math.abs(newBpm - currentIntervalBpm) > 1) {
           currentIntervalBpm = newBpm
@@ -347,6 +353,9 @@ function App() {
         }
         
         if (!(customAudio && currentBpmAnalysis)) {
+          const newBpm = calculateRoundBpm(roundCount)
+          setDisplayBpm(Math.round(newBpm))
+          
           if (intervalRef.current) {
             clearInterval(intervalRef.current)
           }
@@ -375,6 +384,7 @@ function App() {
     setCurrentRound(0)
     setIsFullscreen(false)
     setCountdown(null)
+    setDisplayBpm(customAudio && currentBpmAnalysis ? currentBaseBpm : 91)
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
@@ -461,7 +471,7 @@ function App() {
                   Round {currentRound} of {currentRounds}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  {Math.round(calculateRoundBpm(currentRound, (customAudio && currentBpmAnalysis) ? (customAudioRef.current?.currentTime || defaultAudioRef.current?.currentTime) : undefined))} BPM
+                  {displayBpm} BPM
                 </span>
               </div>
               

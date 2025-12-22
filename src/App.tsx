@@ -102,6 +102,8 @@ function App() {
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
   const [currentRound, setCurrentRound] = useState(0)
   const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [countdown, setCountdown] = useState<number | null>(null)
   
   const intervalRef = useRef<number | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -223,10 +225,30 @@ function App() {
   const startBeat = () => {
     if (isPlaying) return
     
+    setIsFullscreen(true)
+    setCurrentRound(1)
+    setCountdown(3)
+    
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(countdownInterval)
+          setTimeout(() => {
+            setCountdown(null)
+            beginPlayback()
+          }, 1000)
+          return null
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  const beginPlayback = () => {
     setIsPlaying(true)
     setRevealedIndices(new Set())
     let index = -1
-    let roundCount = 0
+    let roundCount = 1
     
     if (customAudio && customAudioRef.current) {
       customAudioRef.current.currentTime = 0
@@ -238,8 +260,8 @@ function App() {
     const playSequence = () => {
       index = (index + 1) % currentGridItems.length
       
-      if (index === 0) {
-        if (roundCount >= currentRounds) {
+      if (index === 0 && roundCount > 1) {
+        if (roundCount > currentRounds) {
           stopBeat()
           toast.success(`Completed ${currentRounds} round${currentRounds > 1 ? 's' : ''}!`)
           return
@@ -250,11 +272,11 @@ function App() {
           setGridItems(newGrid)
         }
         
-        if (roundCount > 0) {
-          setRevealedIndices(new Set())
-        }
-        
-        setCurrentRound(roundCount + 1)
+        setRevealedIndices(new Set())
+        setCurrentRound(roundCount)
+      }
+      
+      if (index === currentGridItems.length - 1) {
         roundCount++
       }
       
@@ -275,6 +297,8 @@ function App() {
     setActiveIndex(null)
     setRevealedIndices(new Set())
     setCurrentRound(0)
+    setIsFullscreen(false)
+    setCountdown(null)
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
@@ -333,6 +357,60 @@ function App() {
   return (
     <div className="min-h-screen p-4 md:p-8">
       <Toaster />
+      
+      {isFullscreen && (
+        <div className="fixed inset-0 bg-background z-[100] flex items-center justify-center">
+          {countdown !== null ? (
+            <div className="text-center space-y-8">
+              <h2 className="text-4xl font-bold text-foreground">
+                Round 1 of {currentRounds}
+              </h2>
+              <div 
+                className="text-[200px] font-bold text-primary animate-[countdown-pulse_1s_ease-out]"
+                key={countdown}
+                style={{ 
+                  textShadow: '0 8px 32px rgba(232, 116, 79, 0.4)'
+                }}
+              >
+                {countdown}
+              </div>
+            </div>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center p-8">
+              <div className="mb-8">
+                <Badge variant="secondary" className="text-2xl font-bold px-6 py-2">
+                  Round {currentRound} of {currentRounds}
+                </Badge>
+              </div>
+              
+              <div 
+                className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-4xl"
+              >
+                {currentGridItems.map((item, index) => (
+                  <GridCard
+                    key={index}
+                    content={item.content}
+                    contentType={item.type}
+                    isActive={activeIndex === index}
+                    hasBeenRevealed={revealedIndices.has(index)}
+                  />
+                ))}
+              </div>
+              
+              <Button
+                size="lg"
+                variant="destructive"
+                className="mt-8 h-14 px-8 text-lg font-bold"
+                onClick={stopBeat}
+              >
+                <PauseCircle size={28} weight="fill" className="mr-2" />
+                Stop
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      
       <div className="max-w-5xl mx-auto space-y-8">
         <header className="text-center space-y-2 py-4">
           <h1 className="text-5xl md:text-7xl font-bold text-primary tracking-tight" style={{ 
@@ -345,11 +423,6 @@ function App() {
           }}>
             ON THE BEAT
           </p>
-          {isPlaying && (
-            <Badge variant="secondary" className="text-lg font-bold mt-2">
-              Round {currentRound} of {currentRounds}
-            </Badge>
-          )}
         </header>
 
         <div 
@@ -361,8 +434,8 @@ function App() {
               key={index}
               content={item.content}
               contentType={item.type}
-              isActive={activeIndex === index}
-              hasBeenRevealed={revealedIndices.has(index)}
+              isActive={false}
+              hasBeenRevealed={false}
             />
           ))}
         </div>
@@ -489,28 +562,30 @@ function App() {
         onGenerateShare={generateShareLink}
       />
 
-      <div className="fixed bottom-8 right-8 flex flex-col gap-3 z-50">
-        <Button
-          size="lg"
-          variant="secondary"
-          className="h-14 w-14 rounded-full shadow-2xl p-0"
-          onClick={() => setShareModalOpen(true)}
-        >
-          <ShareNetwork size={28} weight="fill" />
-        </Button>
-        
-        <Button
-          size="lg"
-          className="h-16 w-16 rounded-full shadow-2xl text-base font-bold p-0"
-          onClick={handlePlayPause}
-        >
-          {isPlaying ? (
-            <PauseCircle size={36} weight="fill" />
-          ) : (
-            <PlayCircle size={36} weight="fill" />
-          )}
-        </Button>
-      </div>
+      {!isFullscreen && (
+        <div className="fixed bottom-8 right-8 flex flex-col gap-3 z-50">
+          <Button
+            size="lg"
+            variant="secondary"
+            className="h-14 w-14 rounded-full shadow-2xl p-0"
+            onClick={() => setShareModalOpen(true)}
+          >
+            <ShareNetwork size={28} weight="fill" />
+          </Button>
+          
+          <Button
+            size="lg"
+            className="h-16 w-16 rounded-full shadow-2xl text-base font-bold p-0"
+            onClick={handlePlayPause}
+          >
+            {isPlaying ? (
+              <PauseCircle size={36} weight="fill" />
+            ) : (
+              <PlayCircle size={36} weight="fill" />
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

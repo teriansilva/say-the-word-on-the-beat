@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -11,11 +11,15 @@ import { ContentPicker } from '@/components/ContentPicker'
 import { GridCard } from '@/components/GridCard'
 import { ExportOverlay } from '@/components/ExportOverlay'
 import { AudioUploader } from '@/components/AudioUploader'
+import { ImagePoolManager } from '@/components/ImagePoolManager'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 interface GridItem {
   content: string
   type: 'emoji' | 'image'
 }
+
+type Difficulty = 'easy' | 'medium' | 'hard'
 
 const DEFAULT_ITEMS: GridItem[] = [
   { content: '🐱', type: 'emoji' },
@@ -28,7 +32,68 @@ const DEFAULT_ITEMS: GridItem[] = [
   { content: '🪨', type: 'emoji' },
 ]
 
+function generateGridFromPool(images: string[], difficulty: Difficulty): GridItem[] {
+  if (images.length === 0) {
+    return DEFAULT_ITEMS
+  }
+
+  const gridSize = 8
+  const result: GridItem[] = []
+
+  switch (difficulty) {
+    case 'easy': {
+      for (let i = 0; i < gridSize; i += 2) {
+        const randomImage = images[Math.floor(Math.random() * images.length)]
+        result.push({ content: randomImage, type: 'image' })
+        result.push({ content: randomImage, type: 'image' })
+      }
+      break
+    }
+
+    case 'medium': {
+      let lastUsed: string | null = null
+      for (let i = 0; i < gridSize; i++) {
+        const availableImages = lastUsed 
+          ? images.filter(img => img !== lastUsed)
+          : images
+        
+        const pool = availableImages.length > 0 ? availableImages : images
+        const randomImage = pool[Math.floor(Math.random() * pool.length)]
+        
+        result.push({ content: randomImage, type: 'image' })
+        
+        if (Math.random() > 0.3) {
+          lastUsed = randomImage
+        } else {
+          lastUsed = null
+        }
+      }
+      break
+    }
+
+    case 'hard': {
+      let lastUsed: string | null = null
+      for (let i = 0; i < gridSize; i++) {
+        const availableImages = lastUsed 
+          ? images.filter(img => img !== lastUsed)
+          : images
+        
+        const pool = availableImages.length > 0 ? availableImages : images
+        const randomImage = pool[Math.floor(Math.random() * pool.length)]
+        
+        result.push({ content: randomImage, type: 'image' })
+        lastUsed = randomImage
+      }
+      break
+    }
+  }
+
+  return result
+}
+
 function App() {
+  const [imagePool, setImagePool] = useKV<string[]>('image-pool', [])
+  const [difficulty, setDifficulty] = useKV<Difficulty>('difficulty', 'medium')
   const [gridItems, setGridItems] = useKV<GridItem[]>('grid-items', DEFAULT_ITEMS)
   const [bpm, setBpm] = useKV<number>('bpm-value', 120)
   const [customAudio, setCustomAudio] = useKV<string | null>('custom-audio', null)
@@ -44,7 +109,14 @@ function App() {
   const gridRef = useRef<HTMLDivElement>(null)
 
   const currentBpm = bpm ?? 120
-  const currentGridItems = gridItems ?? DEFAULT_ITEMS
+  const currentDifficulty = difficulty ?? 'medium'
+  const currentImagePool = imagePool ?? []
+  const currentGridItems = useMemo(() => {
+    if (currentImagePool.length > 0) {
+      return generateGridFromPool(currentImagePool, currentDifficulty)
+    }
+    return gridItems ?? DEFAULT_ITEMS
+  }, [currentImagePool, currentDifficulty, gridItems])
   const beatInterval = (60 / currentBpm) * 1000
 
   const playBeatSound = () => {
@@ -118,6 +190,12 @@ function App() {
 
   const handleContentSelect = (content: string, type: 'emoji' | 'image') => {
     if (selectedCardIndex !== null) {
+      if (currentImagePool.length > 0) {
+        toast.info('Disable image pool mode to customize individual cards')
+        setSelectedCardIndex(null)
+        return
+      }
+      
       setGridItems((current) => {
         const updated = [...(current ?? DEFAULT_ITEMS)]
         updated[selectedCardIndex] = { content, type }
@@ -128,10 +206,26 @@ function App() {
   }
 
   const handleCardClick = (index: number) => {
+    if (currentImagePool.length > 0) {
+      toast.info('Individual cards cannot be edited in image pool mode')
+      return
+    }
+    
     if (isPlaying) {
       stopBeat()
     }
     setSelectedCardIndex(index)
+  }
+
+  const handleRegenerateGrid = () => {
+    if (currentImagePool.length === 0) {
+      toast.error('Add images to the pool first')
+      return
+    }
+    
+    const newGrid = generateGridFromPool(currentImagePool, currentDifficulty)
+    setGridItems(newGrid)
+    toast.success('Grid regenerated!')
   }
 
   const exportVideo = async () => {
@@ -319,6 +413,13 @@ function App() {
     }
   }, [currentBpm])
 
+  useEffect(() => {
+    if (currentImagePool.length > 0) {
+      const newGrid = generateGridFromPool(currentImagePool, currentDifficulty)
+      setGridItems(newGrid)
+    }
+  }, [currentDifficulty])
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <Toaster />
@@ -352,6 +453,63 @@ function App() {
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6 bg-card p-6 rounded-2xl border-2 border-border shadow-sm">
+          <ImagePoolManager
+            images={currentImagePool}
+            onImagesChange={(images) => setImagePool(images)}
+          />
+          
+          {currentImagePool.length > 0 && (
+            <Card className="p-4 border-2">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-foreground">
+                    Difficulty
+                  </label>
+                  <Badge variant="outline" className="text-xs">
+                    {currentDifficulty === 'easy' && 'Same images repeat'}
+                    {currentDifficulty === 'medium' && 'Slight variance'}
+                    {currentDifficulty === 'hard' && 'All different'}
+                  </Badge>
+                </div>
+                
+                <ToggleGroup
+                  type="single"
+                  value={currentDifficulty}
+                  onValueChange={(value) => {
+                    if (value) setDifficulty(value as Difficulty)
+                  }}
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="easy" className="text-sm">
+                    Easy
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="medium" className="text-sm">
+                    Medium
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="hard" className="text-sm">
+                    Hard
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                
+                <p className="text-xs text-muted-foreground">
+                  {currentDifficulty === 'easy' && 'Same images appear consecutively (pairs)'}
+                  {currentDifficulty === 'medium' && 'Images mostly change with occasional repeats'}
+                  {currentDifficulty === 'hard' && 'Every image is different from the previous one'}
+                </p>
+                
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRegenerateGrid}
+                  className="w-full"
+                  disabled={isPlaying}
+                >
+                  Regenerate Grid
+                </Button>
+              </div>
+            </Card>
+          )}
+          
           <AudioUploader
             audioUrl={customAudio ?? null}
             onAudioUpload={(url) => setCustomAudio(url)}
@@ -412,7 +570,12 @@ function App() {
         </div>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>Click any card to change its content • Upload images or choose emojis • Add custom audio</p>
+          <p>
+            {currentImagePool.length === 0 
+              ? 'Click any card to change its content • Upload images to the pool for difficulty modes'
+              : 'Upload images to the pool • Choose difficulty • Cards auto-generate based on your settings'
+            }
+          </p>
         </div>
       </div>
 

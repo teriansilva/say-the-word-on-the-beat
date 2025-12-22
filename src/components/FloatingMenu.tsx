@@ -25,13 +25,13 @@ export function FloatingMenu({ isPlaying, onPlayPause, onShareClick }: FloatingM
           >
             <Button
               size="lg"
-              className="h-16 w-16 rounded-2xl shadow-lg text-base font-bold p-0"
+              className="h-12 w-12 rounded-xl shadow-lg text-base font-bold p-0"
               onClick={onPlayPause}
             >
               {isPlaying ? (
-                <PauseCircle size={36} weight="fill" />
+                <PauseCircle size={28} weight="fill" />
               ) : (
-                <PlayCircle size={36} weight="fill" />
+                <PlayCircle size={28} weight="fill" />
               )}
             </Button>
             

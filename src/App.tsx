@@ -5,13 +5,13 @@ import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Toaster } from '@/components/ui/sonner'
-import { PlayCircle, PauseCircle } from '@phosphor-icons/react'
+import { PlayCircle, PauseCircle, ShareNetwork } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { GridCard } from '@/components/GridCard'
 import { AudioUploader } from '@/components/AudioUploader'
 import { ImagePoolManager } from '@/components/ImagePoolManager'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { ShareLink } from '@/components/ShareLink'
+import { ShareModal } from '@/components/ShareModal'
 
 interface GridItem {
   content: string
@@ -98,7 +98,7 @@ function App() {
   const [customAudio, setCustomAudio] = useKV<string | null>('custom-audio', null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
-  const [shareUrl, setShareUrl] = useState('')
+  const [shareModalOpen, setShareModalOpen] = useState(false)
   
   const intervalRef = useRef<number | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -117,7 +117,15 @@ function App() {
   }, [currentImagePool, currentDifficulty, gridItems])
   const beatInterval = (60 / currentBpm) * 1000
 
-  const generateShareLink = () => {
+  const generateGuid = (): string => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0
+      const v = c === 'x' ? r : (r & 0x3 | 0x8)
+      return v.toString(16)
+    })
+  }
+
+  const generateShareLink = async (): Promise<string> => {
     try {
       const config = {
         bpm: currentBpm,
@@ -126,25 +134,47 @@ function App() {
         audio: customAudio
       }
       
-      const encoded = btoa(JSON.stringify(config))
-      const url = new URL(window.location.href)
-      url.searchParams.set('config', encoded)
+      const guid = generateGuid()
+      await window.spark.kv.set(`share:${guid}`, config)
       
-      setShareUrl(url.toString())
-      toast.success('Share link generated!')
+      const url = new URL(window.location.href)
+      url.searchParams.delete('config')
+      url.searchParams.set('share', guid)
+      
+      return url.toString()
     } catch (error) {
-      toast.error('Failed to generate share link')
+      throw new Error('Failed to generate share link')
     }
   }
 
-  const loadFromUrl = () => {
+  const loadFromUrl = async () => {
     if (hasLoadedFromUrl.current) return
     
     try {
       const urlParams = new URLSearchParams(window.location.search)
+      const shareId = urlParams.get('share')
       const configParam = urlParams.get('config')
       
-      if (configParam) {
+      if (shareId) {
+        const config = await window.spark.kv.get<{
+          bpm: number
+          difficulty: Difficulty
+          images: string[]
+          audio: string | null
+        }>(`share:${shareId}`)
+        
+        if (config) {
+          if (config.bpm) setBpm(config.bpm)
+          if (config.difficulty) setDifficulty(config.difficulty)
+          if (config.images && Array.isArray(config.images)) setImagePool(config.images)
+          if (config.audio) setCustomAudio(config.audio)
+          
+          toast.success('Loaded shared game configuration!')
+          hasLoadedFromUrl.current = true
+        } else {
+          toast.error('Share link not found')
+        }
+      } else if (configParam) {
         const decoded = JSON.parse(atob(configParam))
         
         if (decoded.bpm) setBpm(decoded.bpm)
@@ -303,11 +333,6 @@ function App() {
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6 bg-card p-6 rounded-2xl border-2 border-border shadow-sm">
-          <ShareLink 
-            shareUrl={shareUrl}
-            onGenerate={generateShareLink}
-          />
-          
           <ImagePoolManager
             images={currentImagePool}
             onImagesChange={(images) => setImagePool(images)}
@@ -403,17 +428,34 @@ function App() {
         <audio ref={customAudioRef} src={customAudio} preload="auto" />
       )}
 
-      <Button
-        size="lg"
-        className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-2xl text-base font-bold z-50 p-0"
-        onClick={handlePlayPause}
-      >
-        {isPlaying ? (
-          <PauseCircle size={36} weight="fill" />
-        ) : (
-          <PlayCircle size={36} weight="fill" />
-        )}
-      </Button>
+      <ShareModal
+        open={shareModalOpen}
+        onOpenChange={setShareModalOpen}
+        onGenerateShare={generateShareLink}
+      />
+
+      <div className="fixed bottom-8 right-8 flex flex-col gap-3 z-50">
+        <Button
+          size="lg"
+          variant="secondary"
+          className="h-14 w-14 rounded-full shadow-2xl p-0"
+          onClick={() => setShareModalOpen(true)}
+        >
+          <ShareNetwork size={28} weight="fill" />
+        </Button>
+        
+        <Button
+          size="lg"
+          className="h-16 w-16 rounded-full shadow-2xl text-base font-bold p-0"
+          onClick={handlePlayPause}
+        >
+          {isPlaying ? (
+            <PauseCircle size={36} weight="fill" />
+          ) : (
+            <PlayCircle size={36} weight="fill" />
+          )}
+        </Button>
+      </div>
     </div>
   )
 }

@@ -44,7 +44,9 @@ const FILE_SIGNATURES: Record<string, number[][]> = {
 async function verifyFileSignature(file: File, expectedType: string): Promise<boolean> {
   const signatures = FILE_SIGNATURES[expectedType];
   if (!signatures) {
-    return true; // If we don't have signature for this type, skip verification
+    // Only allow types with explicitly defined signatures
+    console.warn(`No signature verification available for type: ${expectedType}`);
+    return false;
   }
 
   return new Promise((resolve) => {
@@ -72,7 +74,10 @@ async function verifyFileSignature(file: File, expectedType: string): Promise<bo
       
       resolve(matches);
     };
-    reader.onerror = () => resolve(false);
+    reader.onerror = (error) => {
+      console.error('File signature verification failed:', error);
+      resolve(false);
+    };
     
     // Read first 12 bytes for signature verification (enough for WEBP check)
     reader.readAsArrayBuffer(file.slice(0, 12));
@@ -136,16 +141,18 @@ export async function validateAudioFile(file: File): Promise<{ valid: boolean; e
  * Sanitize text input to prevent XSS
  */
 export function sanitizeText(input: string): string {
-  // First encode all special HTML characters to prevent any HTML interpretation
-  let sanitized = input
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
+  // Map of characters to HTML entities for encoding
+  const htmlEntities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '/': '&#x2F;'
+  };
   
-  return sanitized;
+  // Replace all special characters with their HTML entity equivalents
+  return input.replace(/[&<>"'/]/g, (char) => htmlEntities[char] || char);
 }
 
 /**

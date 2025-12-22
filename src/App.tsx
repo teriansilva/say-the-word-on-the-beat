@@ -256,7 +256,7 @@ function App() {
               .filter(img => {
                 // Validate data URL
                 if (!isValidDataUrl(img.url)) {
-                  console.warn('Invalid image URL in shared config, skipping')
+                  console.warn('Invalid image data URL format detected in shared config')
                   return false
                 }
                 return true
@@ -328,7 +328,7 @@ function App() {
               .map((img: ImagePoolItem | string) => typeof img === 'string' ? { url: img } : img)
               .filter((img: ImagePoolItem) => {
                 if (!isValidDataUrl(img.url)) {
-                  console.warn('Invalid image URL in config, skipping')
+                  console.warn('Invalid image data URL format detected in config')
                   return false
                 }
                 return true

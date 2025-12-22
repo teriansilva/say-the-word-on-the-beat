@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
-import { Upload, Waveform, X, ArrowSquareOut, Spinner } from '@phosphor-icons/react'
+import { Upload, Waveform, X, ArrowSquareOut, Spinner, ArrowCounterClockwise } from '@phosphor-icons/react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { analyzeBpm, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
@@ -21,6 +21,12 @@ interface AudioUploaderProps {
 export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onBpmChange, baseBpm, onBaseBpmChange, isPlaying }: AudioUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+  const handleReset = () => {
+    const resetBpm = audioUrl ? baseBpm : 91
+    onBpmChange(resetBpm)
+    toast.success('Tempo reset to original value')
+  }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -137,17 +143,8 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              This value is automatically detected but can be adjusted if needed
+              Automatically detected base tempo for this audio file
             </p>
-            <Slider
-              value={[baseBpm]}
-              onValueChange={([value]) => onBaseBpmChange(value)}
-              min={60}
-              max={200}
-              step={1}
-              className="w-full"
-              disabled={isPlaying}
-            />
             <a
               href="https://tunebat.com/Analyzer"
               target="_blank"
@@ -163,11 +160,22 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
         <div className="pt-3 border-t border-border space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-sm font-semibold text-foreground">
-              Tempo
+              Adjust Tempo
             </label>
-            <Badge variant="secondary" className="text-sm font-bold">
-              {bpm} BPM
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-sm font-bold">
+                {bpm} BPM
+              </Badge>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleReset}
+                className="h-7 w-7 p-0"
+                disabled={isPlaying}
+              >
+                <ArrowCounterClockwise size={16} weight="bold" />
+              </Button>
+            </div>
           </div>
           <Slider
             value={[bpm]}

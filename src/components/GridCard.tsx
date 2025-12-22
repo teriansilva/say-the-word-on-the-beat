@@ -1,14 +1,17 @@
 import { Card } from '@/components/ui/card'
-import { Plus } from '@phosphor-icons/react'
+import { Plus, Question } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 interface GridCardProps {
   content: string
   contentType: 'emoji' | 'image'
   isActive: boolean
+  hasBeenRevealed: boolean
 }
 
-export function GridCard({ content, contentType, isActive }: GridCardProps) {
+export function GridCard({ content, contentType, isActive, hasBeenRevealed }: GridCardProps) {
+  const shouldShowContent = hasBeenRevealed
+  
   return (
     <Card
       className={cn(
@@ -19,7 +22,9 @@ export function GridCard({ content, contentType, isActive }: GridCardProps) {
       )}
     >
       <div className="relative w-full h-full flex items-center justify-center">
-        {content ? (
+        {!shouldShowContent ? (
+          <Question size={64} weight="bold" className="text-muted-foreground" />
+        ) : content ? (
           contentType === 'emoji' ? (
             <span className="text-6xl md:text-7xl select-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
               {content}

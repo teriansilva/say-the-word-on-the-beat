@@ -96,8 +96,11 @@ function App() {
   const [gridItems, setGridItems] = useKV<GridItem[]>('grid-items', DEFAULT_ITEMS)
   const [bpm, setBpm] = useKV<number>('bpm-value', 120)
   const [customAudio, setCustomAudio] = useKV<string | null>('custom-audio', null)
+  const [rounds, setRounds] = useKV<number>('rounds', 1)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
+  const [currentRound, setCurrentRound] = useState(0)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   
   const intervalRef = useRef<number | null>(null)
@@ -109,6 +112,7 @@ function App() {
   const currentBpm = bpm ?? 120
   const currentDifficulty = difficulty ?? 'medium'
   const currentImagePool = imagePool ?? []
+  const currentRounds = rounds ?? 1
   const currentGridItems = useMemo(() => {
     if (currentImagePool.length > 0) {
       return generateGridFromPool(currentImagePool, currentDifficulty)
@@ -131,7 +135,8 @@ function App() {
         bpm: currentBpm,
         difficulty: currentDifficulty,
         images: currentImagePool,
-        audio: customAudio
+        audio: customAudio,
+        rounds: currentRounds
       }
       
       const guid = generateGuid()
@@ -161,6 +166,7 @@ function App() {
           difficulty: Difficulty
           images: string[]
           audio: string | null
+          rounds: number
         }>(`share:${shareId}`)
         
         if (config) {
@@ -168,6 +174,7 @@ function App() {
           if (config.difficulty) setDifficulty(config.difficulty)
           if (config.images && Array.isArray(config.images)) setImagePool(config.images)
           if (config.audio) setCustomAudio(config.audio)
+          if (config.rounds) setRounds(config.rounds)
           
           toast.success('Loaded shared game configuration!')
           hasLoadedFromUrl.current = true
@@ -181,6 +188,7 @@ function App() {
         if (decoded.difficulty) setDifficulty(decoded.difficulty)
         if (decoded.images && Array.isArray(decoded.images)) setImagePool(decoded.images)
         if (decoded.audio) setCustomAudio(decoded.audio)
+        if (decoded.rounds) setRounds(decoded.rounds)
         
         toast.success('Loaded shared game configuration!')
         hasLoadedFromUrl.current = true
@@ -216,7 +224,10 @@ function App() {
     if (isPlaying) return
     
     setIsPlaying(true)
+    setCurrentRound(0)
+    setRevealedIndices(new Set())
     let index = 0
+    let roundCount = 0
     
     if (customAudio && customAudioRef.current) {
       customAudioRef.current.currentTime = 0
@@ -226,12 +237,29 @@ function App() {
     }
     
     const playSequence = () => {
-      if (index === 0 && currentImagePool.length > 0) {
-        const newGrid = generateGridFromPool(currentImagePool, currentDifficulty)
-        setGridItems(newGrid)
+      if (index === 0) {
+        if (roundCount >= currentRounds) {
+          stopBeat()
+          toast.success(`Completed ${currentRounds} round${currentRounds > 1 ? 's' : ''}!`)
+          return
+        }
+        
+        if (currentImagePool.length > 0) {
+          const newGrid = generateGridFromPool(currentImagePool, currentDifficulty)
+          setGridItems(newGrid)
+        }
+        
+        if (roundCount > 0) {
+          setRevealedIndices(new Set())
+        }
+        
+        setCurrentRound(roundCount + 1)
+        roundCount++
       }
       
       setActiveIndex(index)
+      setRevealedIndices(prev => new Set([...prev, index]))
+      
       if (!customAudio) {
         playBeatSound()
       }
@@ -246,6 +274,8 @@ function App() {
   const stopBeat = () => {
     setIsPlaying(false)
     setActiveIndex(null)
+    setRevealedIndices(new Set())
+    setCurrentRound(0)
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
@@ -316,6 +346,11 @@ function App() {
           }}>
             ON THE BEAT
           </p>
+          {isPlaying && (
+            <Badge variant="secondary" className="text-lg font-bold mt-2">
+              Round {currentRound} of {currentRounds}
+            </Badge>
+          )}
         </header>
 
         <div 
@@ -328,6 +363,7 @@ function App() {
               content={item.content}
               contentType={item.type}
               isActive={activeIndex === index}
+              hasBeenRevealed={revealedIndices.has(index)}
             />
           ))}
         </div>
@@ -395,6 +431,26 @@ function App() {
             onAudioUpload={(url) => setCustomAudio(url)}
             onAudioRemove={() => setCustomAudio(null)}
           />
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-lg font-semibold text-foreground">
+                Rounds
+              </label>
+              <Badge variant="secondary" className="text-base font-bold">
+                {currentRounds}
+              </Badge>
+            </div>
+            <Slider
+              value={[currentRounds]}
+              onValueChange={([value]) => setRounds(value)}
+              min={1}
+              max={10}
+              step={1}
+              className="w-full"
+              disabled={isPlaying}
+            />
+          </div>
           
           <div className="space-y-3">
             <div className="flex items-center justify-between">

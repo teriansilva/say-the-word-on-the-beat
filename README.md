@@ -36,6 +36,23 @@ npm run dev
 
 The application will be available at `http://localhost:5173` (or the port Vite assigns).
 
+### 🐳 Docker Deployment
+
+For production deployment using Docker:
+
+```bash
+# Using Docker Compose (recommended)
+docker compose up -d
+
+# The application will be available at http://localhost:8080
+```
+
+See [DOCKER.md](DOCKER.md) for complete Docker deployment documentation including:
+- Multi-stage build process
+- Nginx configuration
+- Health checks
+- Production best practices
+
 ## 🛠️ Tech Stack
 
 - **Frontend Framework**: React 19 with TypeScript

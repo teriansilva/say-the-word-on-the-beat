@@ -199,17 +199,17 @@ function App() {
     }
     
     const playSequence = () => {
+      if (index === 0 && currentImagePool.length > 0) {
+        const newGrid = generateGridFromPool(currentImagePool, currentDifficulty)
+        setGridItems(newGrid)
+      }
+      
       setActiveIndex(index)
       if (!customAudio) {
         playBeatSound()
       }
       
       index = (index + 1) % currentGridItems.length
-      
-      if (index === 0 && currentImagePool.length > 0) {
-        const newGrid = generateGridFromPool(currentImagePool, currentDifficulty)
-        setGridItems(newGrid)
-      }
     }
     
     playSequence()

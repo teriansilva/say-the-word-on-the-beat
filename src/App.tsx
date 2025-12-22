@@ -338,17 +338,6 @@ function App() {
     }
   }
 
-  const handleRegenerateGrid = () => {
-    if (currentImagePool.length === 0) {
-      toast.error('Add images to the pool first')
-      return
-    }
-    
-    const newGrid = generateGridFromPool(currentImagePool, currentDifficulty)
-    setGridItems(newGrid)
-    toast.success('Grid regenerated!')
-  }
-
   useEffect(() => {
     loadFromUrl()
   }, [])
@@ -490,40 +479,24 @@ function App() {
                   {currentDifficulty === 'medium' && 'Images mostly change with occasional repeats'}
                   {currentDifficulty === 'hard' && 'Every image is different from the previous one'}
                 </p>
-                
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleRegenerateGrid}
-                  className="w-full"
-                  disabled={isPlaying}
-                >
-                  Regenerate Grid
-                </Button>
               </div>
             </Card>
           )}
           
-          <AudioUploader
-            audioUrl={customAudio ?? null}
-            onAudioUpload={(url) => setCustomAudio(url)}
-            onAudioRemove={() => setCustomAudio(null)}
-          />
-          
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-lg font-semibold text-foreground">
-                Rounds
+                Tempo
               </label>
               <Badge variant="secondary" className="text-base font-bold">
-                {currentRounds}
+                {currentBpm} BPM
               </Badge>
             </div>
             <Slider
-              value={[currentRounds]}
-              onValueChange={([value]) => setRounds(value)}
-              min={1}
-              max={10}
+              value={[currentBpm]}
+              onValueChange={([value]) => setBpm(value)}
+              min={60}
+              max={180}
               step={1}
               className="w-full"
               disabled={isPlaying}
@@ -549,20 +522,26 @@ function App() {
             </div>
           </Card>
           
+          <AudioUploader
+            audioUrl={customAudio ?? null}
+            onAudioUpload={(url) => setCustomAudio(url)}
+            onAudioRemove={() => setCustomAudio(null)}
+          />
+          
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-lg font-semibold text-foreground">
-                Tempo
+                Rounds
               </label>
               <Badge variant="secondary" className="text-base font-bold">
-                {currentBpm} BPM
+                {currentRounds}
               </Badge>
             </div>
             <Slider
-              value={[currentBpm]}
-              onValueChange={([value]) => setBpm(value)}
-              min={60}
-              max={180}
+              value={[currentRounds]}
+              onValueChange={([value]) => setRounds(value)}
+              min={1}
+              max={10}
               step={1}
               className="w-full"
               disabled={isPlaying}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useLocalStorage, shareApi } from '@/hooks/useLocalStorage'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
@@ -97,16 +97,16 @@ function generateGridFromPool(images: ImagePoolItem[], difficulty: Difficulty): 
 }
 
 function App() {
-  const [imagePool, setImagePool] = useKV<ImagePoolItem[]>('image-pool-v2', [])
-  const [difficulty, setDifficulty] = useKV<Difficulty>('difficulty', 'medium')
-  const [gridItems, setGridItems] = useKV<GridItem[]>('grid-items', DEFAULT_ITEMS)
-  const [bpm, setBpm] = useKV<number>('bpm-value', 91)
-  const [baseBpm, setBaseBpm] = useKV<number>('base-bpm', 91)
-  const [customAudio, setCustomAudio] = useKV<string | null>('custom-audio', null)
-  const [bpmAnalysis, setBpmAnalysis] = useKV<BpmAnalysisResult | null>('bpm-analysis', null)
-  const [rounds, setRounds] = useKV<number>('rounds', 1)
-  const [increaseSpeed, setIncreaseSpeed] = useKV<boolean>('increase-speed', false)
-  const [speedIncreasePercent, setSpeedIncreasePercent] = useKV<number>('speed-increase-percent', 5)
+  const [imagePool, setImagePool] = useLocalStorage<ImagePoolItem[]>('image-pool-v2', [])
+  const [difficulty, setDifficulty] = useLocalStorage<Difficulty>('difficulty', 'medium')
+  const [gridItems, setGridItems] = useLocalStorage<GridItem[]>('grid-items', DEFAULT_ITEMS)
+  const [bpm, setBpm] = useLocalStorage<number>('bpm-value', 91)
+  const [baseBpm, setBaseBpm] = useLocalStorage<number>('base-bpm', 91)
+  const [customAudio, setCustomAudio] = useLocalStorage<string | null>('custom-audio', null)
+  const [bpmAnalysis, setBpmAnalysis] = useLocalStorage<BpmAnalysisResult | null>('bpm-analysis', null)
+  const [rounds, setRounds] = useLocalStorage<number>('rounds', 1)
+  const [increaseSpeed, setIncreaseSpeed] = useLocalStorage<boolean>('increase-speed', false)
+  const [speedIncreasePercent, setSpeedIncreasePercent] = useLocalStorage<number>('speed-increase-percent', 5)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
@@ -164,14 +164,6 @@ function App() {
   
   const activeAudioUrl = customAudio || defaultAudio
 
-  const generateGuid = (): string => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0
-      const v = c === 'x' ? r : (r & 0x3 | 0x8)
-      return v.toString(16)
-    })
-  }
-
   const generateShareLink = async (): Promise<string> => {
     try {
       const config = {
@@ -186,8 +178,7 @@ function App() {
         speedIncreasePercent: currentSpeedIncreasePercent
       }
       
-      const guid = generateGuid()
-      await window.spark.kv.set(`share:${guid}`, config)
+      const guid = await shareApi.create(config)
       
       const url = new URL(window.location.href)
       url.searchParams.delete('config')
@@ -208,7 +199,7 @@ function App() {
       const configParam = urlParams.get('config')
       
       if (shareId) {
-        const config = await window.spark.kv.get<{
+        const config = await shareApi.get(shareId) as {
           bpm: number
           baseBpm?: number
           difficulty: Difficulty
@@ -218,7 +209,7 @@ function App() {
           rounds: number
           increaseSpeed?: boolean
           speedIncreasePercent?: number
-        }>(`share:${shareId}`)
+        } | null
         
         if (config) {
           if (config.bpm) setBpm(config.bpm)

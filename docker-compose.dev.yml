@@ -1,7 +1,3 @@
-# Default docker-compose - uses development settings
-# For production: docker-compose -f docker-compose.prod.yml up -d
-# For development: docker-compose -f docker-compose.dev.yml up -d
-
 services:
   web:
     build:
@@ -17,6 +13,9 @@ services:
       - api
     networks:
       - app-network
+    labels:
+      - "com.say-the-word-on-beat.description=Say the Word on Beat Web Application"
+      - "com.say-the-word-on-beat.version=1.0"
 
   api:
     build:
@@ -25,27 +24,35 @@ services:
     container_name: say-the-word-api
     ports:
       - "3001:3001"
+      - "9229:9229"  # Node.js debugger port
     restart: unless-stopped
     environment:
       - NODE_ENV=development
       - PORT=3001
       - MONGODB_URI=mongodb://mongo:27017/saytheword
       - CORS_ORIGIN=http://localhost:8091
+      - DEBUG=express:*
+    volumes:
+      - ./server/src:/app/src:ro  # Mount source for easier debugging (read-only)
     depends_on:
       - mongo
     networks:
       - app-network
+    labels:
+      - "com.say-the-word-on-beat.description=Say the Word on Beat API Server"
 
   mongo:
     image: mongo:7
     container_name: say-the-word-mongo
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "27017:27017"  # Expose MongoDB for direct access/debugging
     volumes:
       - mongo-data:/data/db
     networks:
       - app-network
+    labels:
+      - "com.say-the-word-on-beat.description=MongoDB Database"
 
 networks:
   app-network:

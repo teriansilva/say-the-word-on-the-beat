@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: say-the-word-on-beat
     ports:
-      - "8080:80"
+      - "8091:80"
     restart: unless-stopped
     environment:
       - NODE_ENV=production

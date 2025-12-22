@@ -36,7 +36,27 @@ const FILE_SIGNATURES: Record<string, number[][]> = {
   'audio/mpeg': [[0xFF, 0xFB], [0xFF, 0xF3], [0xFF, 0xF2]], // MP3 frame sync
   'audio/wav': [[0x52, 0x49, 0x46, 0x46]], // RIFF header
   'audio/ogg': [[0x4F, 0x67, 0x67, 0x53]], // OggS
+  'audio/webm': [[0x1A, 0x45, 0xDF, 0xA3]], // EBML header
+  'audio/aac': [[0xFF, 0xF1], [0xFF, 0xF9]], // ADTS AAC
+  'audio/mp4': [[0x66, 0x74, 0x79, 0x70]], // ftyp box (at offset 4)
+  'audio/x-m4a': [[0x66, 0x74, 0x79, 0x70]], // ftyp box (at offset 4)
 };
+
+// HTML entities for text sanitization (defined once for performance)
+const HTML_ENTITIES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#x27;',
+  '/': '&#x2F;'
+};
+
+// Data URL validation pattern
+const DATA_URL_PATTERN = /^data:([a-zA-Z0-9]+\/[a-zA-Z0-9+.-]+)(;charset=[a-zA-Z0-9-]+)?(;base64)?,/;
+
+// GUID validation pattern
+const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Verify file type using magic bytes
@@ -67,6 +87,15 @@ async function verifyFileSignature(file: File, expectedType: string): Promise<bo
         return;
       }
       
+      // Special handling for MP4/M4A which have ftyp at offset 4
+      if (expectedType === 'audio/mp4' || expectedType === 'audio/x-m4a') {
+        const matches = signatures.some(signature => {
+          return signature.every((byte, index) => arr[index + 4] === byte);
+        });
+        resolve(matches);
+        return;
+      }
+      
       // Check if file starts with any of the valid signatures
       const matches = signatures.some(signature => {
         return signature.every((byte, index) => arr[index] === byte);
@@ -79,7 +108,7 @@ async function verifyFileSignature(file: File, expectedType: string): Promise<bo
       resolve(false);
     };
     
-    // Read first 12 bytes for signature verification (enough for WEBP check)
+    // Read first 12 bytes for signature verification (enough for WEBP and MP4 check)
     reader.readAsArrayBuffer(file.slice(0, 12));
   });
 }
@@ -132,6 +161,9 @@ export async function validateAudioFile(file: File): Promise<{ valid: boolean; e
     if (!signatureValid) {
       return { valid: false, error: 'File type does not match its content' };
     }
+  } else {
+    // Reject audio types without defined signatures for security
+    return { valid: false, error: 'Unsupported audio format for security validation' };
   }
 
   return { valid: true };
@@ -141,18 +173,8 @@ export async function validateAudioFile(file: File): Promise<{ valid: boolean; e
  * Sanitize text input to prevent XSS
  */
 export function sanitizeText(input: string): string {
-  // Map of characters to HTML entities for encoding
-  const htmlEntities: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#x27;',
-    '/': '&#x2F;'
-  };
-  
   // Replace all special characters with their HTML entity equivalents
-  return input.replace(/[&<>"'/]/g, (char) => htmlEntities[char] || char);
+  return input.replace(/[&<>"'/]/g, (char) => HTML_ENTITIES[char] || char);
 }
 
 /**
@@ -165,8 +187,7 @@ export function isValidDataUrl(url: string): boolean {
 
   try {
     // Check if it's a valid data URL format
-    const dataUrlPattern = /^data:([a-zA-Z0-9]+\/[a-zA-Z0-9+.-]+)(;charset=[a-zA-Z0-9-]+)?(;base64)?,/;
-    if (!dataUrlPattern.test(url)) {
+    if (!DATA_URL_PATTERN.test(url)) {
       return false;
     }
 
@@ -245,6 +266,5 @@ export function sanitizeUrlParam(param: string | null): string | null {
  * Validate GUID format
  */
 export function isValidGuid(guid: string): boolean {
-  const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return guidPattern.test(guid);
+  return GUID_PATTERN.test(guid);
 }

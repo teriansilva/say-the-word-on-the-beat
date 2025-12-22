@@ -7,9 +7,10 @@ interface GridCardProps {
   contentType: 'emoji' | 'image'
   isActive: boolean
   hasBeenRevealed: boolean
+  word?: string
 }
 
-export function GridCard({ content, contentType, isActive, hasBeenRevealed }: GridCardProps) {
+export function GridCard({ content, contentType, isActive, hasBeenRevealed, word }: GridCardProps) {
   const shouldShowContent = hasBeenRevealed
   
   return (
@@ -33,11 +34,20 @@ export function GridCard({ content, contentType, isActive, hasBeenRevealed }: Gr
             </span>
           </div>
         ) : (
-          <img
-            src={content}
-            alt="Custom content"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <>
+            <img
+              src={content}
+              alt="Custom content"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {word && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-8 pb-3 px-3">
+                <p className="text-white text-2xl md:text-3xl font-bold text-center leading-tight drop-shadow-lg" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                  {word}
+                </p>
+              </div>
+            )}
+          </>
         )
       ) : (
         <div className="relative w-full h-full flex flex-col items-center justify-center text-muted-foreground">

@@ -9,7 +9,7 @@ import { PlayCircle, PauseCircle, ShareNetwork } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { GridCard } from '@/components/GridCard'
 import { AudioUploader } from '@/components/AudioUploader'
-import { ImagePoolManager } from '@/components/ImagePoolManager'
+import { ImagePoolManager, type ImagePoolItem } from '@/components/ImagePoolManager'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ShareModal } from '@/components/ShareModal'
 import { Switch } from '@/components/ui/switch'
@@ -19,6 +19,7 @@ import { getBpmAtTime, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
 interface GridItem {
   content: string
   type: 'emoji' | 'image'
+  word?: string
 }
 
 type Difficulty = 'easy' | 'medium' | 'hard'
@@ -34,7 +35,7 @@ const DEFAULT_ITEMS: GridItem[] = [
   { content: '🪨', type: 'emoji' },
 ]
 
-function generateGridFromPool(images: string[], difficulty: Difficulty): GridItem[] {
+function generateGridFromPool(images: ImagePoolItem[], difficulty: Difficulty): GridItem[] {
   if (images.length === 0) {
     return DEFAULT_ITEMS
   }
@@ -46,23 +47,23 @@ function generateGridFromPool(images: string[], difficulty: Difficulty): GridIte
     case 'easy': {
       for (let i = 0; i < gridSize; i += 2) {
         const randomImage = images[Math.floor(Math.random() * images.length)]
-        result.push({ content: randomImage, type: 'image' })
-        result.push({ content: randomImage, type: 'image' })
+        result.push({ content: randomImage.url, type: 'image', word: randomImage.word })
+        result.push({ content: randomImage.url, type: 'image', word: randomImage.word })
       }
       break
     }
 
     case 'medium': {
-      let lastUsed: string | null = null
+      let lastUsed: ImagePoolItem | null = null
       for (let i = 0; i < gridSize; i++) {
         const availableImages = lastUsed 
-          ? images.filter(img => img !== lastUsed)
+          ? images.filter(img => img.url !== lastUsed!.url)
           : images
         
         const pool = availableImages.length > 0 ? availableImages : images
         const randomImage = pool[Math.floor(Math.random() * pool.length)]
         
-        result.push({ content: randomImage, type: 'image' })
+        result.push({ content: randomImage.url, type: 'image', word: randomImage.word })
         
         if (Math.random() > 0.3) {
           lastUsed = randomImage
@@ -74,16 +75,16 @@ function generateGridFromPool(images: string[], difficulty: Difficulty): GridIte
     }
 
     case 'hard': {
-      let lastUsed: string | null = null
+      let lastUsed: ImagePoolItem | null = null
       for (let i = 0; i < gridSize; i++) {
         const availableImages = lastUsed 
-          ? images.filter(img => img !== lastUsed)
+          ? images.filter(img => img.url !== lastUsed!.url)
           : images
         
         const pool = availableImages.length > 0 ? availableImages : images
         const randomImage = pool[Math.floor(Math.random() * pool.length)]
         
-        result.push({ content: randomImage, type: 'image' })
+        result.push({ content: randomImage.url, type: 'image', word: randomImage.word })
         lastUsed = randomImage
       }
       break
@@ -96,7 +97,7 @@ function generateGridFromPool(images: string[], difficulty: Difficulty): GridIte
 const DEFAULT_AUDIO_URL = 'https://mblabspublic.blob.core.windows.net/public/audio.mp3'
 
 function App() {
-  const [imagePool, setImagePool] = useKV<string[]>('image-pool', [])
+  const [imagePool, setImagePool] = useKV<ImagePoolItem[]>('image-pool-v2', [])
   const [difficulty, setDifficulty] = useKV<Difficulty>('difficulty', 'medium')
   const [gridItems, setGridItems] = useKV<GridItem[]>('grid-items', DEFAULT_ITEMS)
   const [bpm, setBpm] = useKV<number>('bpm-value', 91)
@@ -211,7 +212,7 @@ function App() {
           bpm: number
           baseBpm?: number
           difficulty: Difficulty
-          images: string[]
+          images: ImagePoolItem[] | string[]
           audio: string | null
           bpmAnalysis?: BpmAnalysisResult | null
           rounds: number
@@ -223,7 +224,12 @@ function App() {
           if (config.bpm) setBpm(config.bpm)
           if (config.baseBpm) setBaseBpm(config.baseBpm)
           if (config.difficulty) setDifficulty(config.difficulty)
-          if (config.images && Array.isArray(config.images)) setImagePool(config.images)
+          if (config.images && Array.isArray(config.images)) {
+            const normalizedImages = config.images.map(img => 
+              typeof img === 'string' ? { url: img } : img
+            )
+            setImagePool(normalizedImages)
+          }
           if (config.audio) setCustomAudio(config.audio)
           if (config.bpmAnalysis) setBpmAnalysis(config.bpmAnalysis)
           if (config.rounds) setRounds(config.rounds)
@@ -241,7 +247,12 @@ function App() {
         if (decoded.bpm) setBpm(decoded.bpm)
         if (decoded.baseBpm) setBaseBpm(decoded.baseBpm)
         if (decoded.difficulty) setDifficulty(decoded.difficulty)
-        if (decoded.images && Array.isArray(decoded.images)) setImagePool(decoded.images)
+        if (decoded.images && Array.isArray(decoded.images)) {
+          const normalizedImages = decoded.images.map((img: ImagePoolItem | string) => 
+            typeof img === 'string' ? { url: img } : img
+          )
+          setImagePool(normalizedImages)
+        }
         if (decoded.audio) setCustomAudio(decoded.audio)
         if (decoded.bpmAnalysis) setBpmAnalysis(decoded.bpmAnalysis)
         if (decoded.rounds) setRounds(decoded.rounds)
@@ -490,6 +501,7 @@ function App() {
                     contentType={item.type}
                     isActive={activeIndex === index}
                     hasBeenRevealed={revealedIndices.has(index)}
+                    word={item.word}
                   />
                 ))}
               </div>

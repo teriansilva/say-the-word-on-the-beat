@@ -1,17 +1,25 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Upload, X, Images } from '@phosphor-icons/react'
-import { useRef } from 'react'
+import { Input } from '@/components/ui/input'
+import { Upload, X, Images, Pencil } from '@phosphor-icons/react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+export interface ImagePoolItem {
+  url: string
+  word?: string
+}
+
 interface ImagePoolManagerProps {
-  images: string[]
-  onImagesChange: (images: string[]) => void
+  images: ImagePoolItem[]
+  onImagesChange: (images: ImagePoolItem[]) => void
 }
 
 export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editingWord, setEditingWord] = useState('')
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -38,13 +46,13 @@ export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerPro
     if (validFiles.length === 0) return
 
     let processedCount = 0
-    const newImages: string[] = []
+    const newImages: ImagePoolItem[] = []
 
     validFiles.forEach(file => {
       const reader = new FileReader()
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string
-        newImages.push(dataUrl)
+        newImages.push({ url: dataUrl })
         processedCount++
 
         if (processedCount === validFiles.length) {
@@ -69,6 +77,23 @@ export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerPro
     toast.success('Image removed')
   }
 
+  const handleEditWord = (index: number) => {
+    setEditingIndex(index)
+    setEditingWord(images[index].word || '')
+  }
+
+  const handleSaveWord = (index: number) => {
+    const updatedImages = [...images]
+    updatedImages[index] = { 
+      ...updatedImages[index], 
+      word: editingWord.trim() || undefined 
+    }
+    onImagesChange(updatedImages)
+    setEditingIndex(null)
+    setEditingWord('')
+    toast.success(editingWord.trim() ? 'Word saved' : 'Word removed')
+  }
+
   return (
     <Card className="p-4 border-2">
       <div className="space-y-3">
@@ -85,24 +110,69 @@ export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerPro
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Upload up to 8 images that will be used in the grid based on difficulty
+          Upload up to 8 images. Optionally add custom words that display with each image.
         </p>
 
         {images.length > 0 && (
-          <div className="grid grid-cols-4 gap-2">
-            {images.map((image, index) => (
-              <div key={index} className="relative group aspect-square">
-                <img
-                  src={image}
-                  alt={`Pool image ${index + 1}`}
-                  className="w-full h-full object-cover rounded-lg border-2 border-border"
-                />
-                <button
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:scale-110 active:scale-95 shadow-md"
-                >
-                  <X size={14} weight="bold" />
-                </button>
+          <div className="grid grid-cols-2 gap-3">
+            {images.map((item, index) => (
+              <div key={index} className="space-y-2">
+                <div className="relative group aspect-square">
+                  <img
+                    src={item.url}
+                    alt={`Pool image ${index + 1}`}
+                    className="w-full h-full object-cover rounded-lg border-2 border-border"
+                  />
+                  <button
+                    onClick={() => handleRemoveImage(index)}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:scale-110 active:scale-95 shadow-md z-10"
+                  >
+                    <X size={14} weight="bold" />
+                  </button>
+                  {item.word && (
+                    <div className="absolute bottom-2 left-2 right-2 bg-black/75 text-white text-xs font-bold py-1 px-2 rounded">
+                      {item.word}
+                    </div>
+                  )}
+                </div>
+                
+                {editingIndex === index ? (
+                  <div className="flex gap-1">
+                    <Input
+                      value={editingWord}
+                      onChange={(e) => setEditingWord(e.target.value)}
+                      placeholder="Word (optional)"
+                      className="text-xs h-7"
+                      maxLength={20}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveWord(index)
+                        } else if (e.key === 'Escape') {
+                          setEditingIndex(null)
+                          setEditingWord('')
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleSaveWord(index)}
+                      className="h-7 px-2"
+                    >
+                      Save
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEditWord(index)}
+                    className="w-full h-7 text-xs gap-1"
+                  >
+                    <Pencil size={12} weight="bold" />
+                    {item.word ? 'Edit Word' : 'Add Word'}
+                  </Button>
+                )}
               </div>
             ))}
           </div>

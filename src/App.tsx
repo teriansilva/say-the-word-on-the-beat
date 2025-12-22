@@ -482,18 +482,18 @@ function App() {
               </div>
             </div>
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center p-8">
-              <div className="mb-8 flex flex-col items-center gap-2">
-                <Badge variant="secondary" className="text-2xl font-bold px-6 py-2">
+            <div className="w-full h-full flex flex-col items-center p-4 md:p-8 overflow-y-auto">
+              <div className="mb-4 md:mb-6 flex flex-col items-center gap-2 flex-shrink-0">
+                <Badge variant="secondary" className="text-lg md:text-2xl font-bold px-4 md:px-6 py-1.5 md:py-2">
                   Round {currentRound} of {currentRounds}
                 </Badge>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-xs md:text-sm text-muted-foreground">
                   {displayBpm} BPM
                 </span>
               </div>
               
               <div 
-                className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-6xl w-full"
+                className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 lg:gap-8 max-w-6xl w-full flex-shrink-0"
               >
                 {currentGridItems.map((item, index) => (
                   <GridCard
@@ -510,10 +510,11 @@ function App() {
               <Button
                 size="lg"
                 variant="destructive"
-                className="mt-8 h-14 px-8 text-lg font-bold"
+                className="mt-4 md:mt-8 h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-bold flex-shrink-0"
                 onClick={stopBeat}
               >
-                <PauseCircle size={28} weight="fill" className="mr-2" />
+                <PauseCircle size={24} weight="fill" className="mr-2 md:hidden" />
+                <PauseCircle size={28} weight="fill" className="mr-2 hidden md:block" />
                 Stop
               </Button>
             </div>

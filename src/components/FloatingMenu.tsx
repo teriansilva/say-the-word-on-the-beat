@@ -10,7 +10,7 @@ interface FloatingMenuProps {
 }
 
 export function FloatingMenu({ isPlaying, onPlayPause, onShareClick }: FloatingMenuProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
 
   return (
     <div className="fixed bottom-8 right-8 z-50 flex items-end gap-3">

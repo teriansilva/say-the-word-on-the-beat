@@ -11,8 +11,8 @@ A playful, interactive web platform that recreates the viral "Say the Word on Be
 - **🎧 Custom Audio Upload**: Upload your own audio files with automatic BPM analysis
 - **🔗 Share Links**: Generate shareable URLs encoding your complete game configuration
 
-## 👀DEMO
-[saywordsonbeat.com](https://saywordsonbeat.com/)
+## 👀 Demo
+See the platform live here: **[saywordsonbeat.com](https://saywordsonbeat.com/)**
 
 ## 🚀 Getting Started
 

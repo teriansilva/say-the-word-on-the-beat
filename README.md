@@ -60,7 +60,15 @@ VITE_SPOTIFY_CLIENT_ID=your_client_id_here
 VITE_SPOTIFY_CLIENT_SECRET=your_client_secret_here
 ```
 
-**Note**: The Spotify integration uses the Client Credentials flow, which doesn't require user authentication. It allows searching for tracks and accessing their BPM/tempo information.
+⚠️ **Security Warning for Production**: The current implementation uses Spotify's Client Credentials flow with the secret exposed in the frontend code. This is **only suitable for development/demonstration purposes**. 
+
+For production deployments, you should:
+- Implement a backend proxy server to handle Spotify authentication
+- Never expose your Client Secret in client-side code
+- Use environment variables on the server side only
+- Consider implementing rate limiting and request validation
+
+See the [Spotify Authorization Guide](https://developer.spotify.com/documentation/web-api/concepts/authorization) for secure production implementations.
 
 ### 🐳 Docker Deployment
 

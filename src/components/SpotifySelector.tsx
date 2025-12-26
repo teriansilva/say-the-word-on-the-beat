@@ -67,14 +67,14 @@ export function SpotifySelector({
   const handleSearchInputChange = (query: string) => {
     setSearchQuery(query)
     
-    // Debounce search
+    // Debounce search to reduce API calls (750ms delay)
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current)
     }
 
     searchTimeoutRef.current = window.setTimeout(() => {
       handleSearch(query)
-    }, 500)
+    }, 750)
   }
 
   const handleTrackSelect = async (track: SpotifyTrack) => {
@@ -148,7 +148,13 @@ export function SpotifySelector({
                 </div>
               </div>
               {selectedTrack.previewUrl && (
-                <audio controls className="w-full h-10" src={selectedTrack.previewUrl} />
+                <audio 
+                  controls 
+                  className="w-full h-10" 
+                  src={selectedTrack.previewUrl}
+                  aria-label={`Preview of ${selectedTrack.name} by ${selectedTrack.artists.join(', ')}`}
+                  title={`30-second preview of ${selectedTrack.name}`}
+                />
               )}
             </div>
           ) : (

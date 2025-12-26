@@ -809,7 +809,7 @@ function App() {
 
       <audio ref={defaultAudioRef} src={defaultAudio} preload="auto" loop />
       
-      {(currentSpotifyTrack?.previewUrl || customAudio) && (
+      {activeAudioUrl !== defaultAudio && (
         <audio ref={customAudioRef} src={activeAudioUrl} preload="auto" loop />
       )}
 

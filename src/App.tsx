@@ -411,8 +411,8 @@ function App() {
   const startBeat = () => {
     if (isPlaying) return
     
-    // Validate countdown duration to prevent division by zero or negative values
-    if (currentCountdownDuration <= 0) {
+    // Validate countdown duration to prevent division by zero or invalid values
+    if (currentCountdownDuration < 0.5) {
       toast.error('Invalid countdown duration')
       return
     }

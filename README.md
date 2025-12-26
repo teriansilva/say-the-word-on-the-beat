@@ -5,10 +5,10 @@ A playful, interactive web platform that recreates the viral "Say the Word on Be
 ## ✨ Features
 
 - **🎨 Picture Grid Builder**: Create customizable grids with emojis or custom images (default 4x2, 8 cards)
-- **🎵 BPM Control & Audio Analysis**: Adjust tempo with intelligent BPM detection for custom audio files
+- **🎵 Spotify Integration**: Search and select songs directly from Spotify with automatic BPM detection
+- **🎵 BPM Control & Audio Analysis**: Adjust tempo with intelligent BPM detection
 - **⏱️ Beat Synchronization**: Visual and audio beat indicators that highlight each card in sequence
 - **🎥 Video Export**: Record and download your grid animation synchronized with audio
-- **🎧 Custom Audio Upload**: Upload your own audio files with automatic BPM analysis
 - **🔗 Share Links**: Generate shareable URLs encoding your complete game configuration
 
 ## 👀 Demo
@@ -20,6 +20,7 @@ See the platform live here: **[saywordsonbeat.com](https://saywordsonbeat.com/)*
 
 - Node.js (v18 or higher recommended)
 - npm or your preferred package manager
+- Spotify API credentials (for song search feature)
 
 ### Installation
 
@@ -33,11 +34,33 @@ cd say-the-word-on-beat
 # Install dependencies
 npm install
 
+# Set up Spotify API credentials (see below)
+cp .env.example .env
+# Edit .env and add your Spotify credentials
+
 # Start the development server
 npm run dev
 ```
 
 The application will be available at `http://localhost:5173` (or the port Vite assigns).
+
+### 🎵 Spotify API Setup
+
+To enable the Spotify song search feature:
+
+1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Log in with your Spotify account
+3. Click "Create an App"
+4. Fill in the app name and description
+5. Once created, you'll see your **Client ID** and **Client Secret**
+6. Copy these credentials to your `.env` file:
+
+```env
+VITE_SPOTIFY_CLIENT_ID=your_client_id_here
+VITE_SPOTIFY_CLIENT_SECRET=your_client_secret_here
+```
+
+**Note**: The Spotify integration uses the Client Credentials flow, which doesn't require user authentication. It allows searching for tracks and accessing their BPM/tempo information.
 
 ### 🐳 Docker Deployment
 
@@ -65,13 +88,15 @@ See [DOCKER.md](DOCKER.md) for complete Docker deployment documentation includin
 - **Icons**: Phosphor Icons
 - **Animations**: Framer Motion
 - **State Management**: TanStack Query
+- **Audio API**: Spotify Web API (for song search and BPM detection)
 
 ## 📖 How It Works
 
-1. **Build Your Grid**: Click on cards to add emojis or upload custom images
-2. **Set the Beat**: Adjust BPM or upload custom audio for automatic tempo detection
-3. **Play & Practice**: Hit play to see the beat indicator highlight each card in rhythm
-4. **Export & Share**: Record your animation and share your creation!
+1. **Build Your Grid**: Upload custom images to create your picture grid
+2. **Choose Your Song**: Search Spotify for any song - BPM is automatically detected
+3. **Adjust Settings**: Fine-tune tempo, difficulty, and speed progression
+4. **Play & Practice**: Hit play to see the beat indicator highlight each card in rhythm
+5. **Export & Share**: Record your animation and share your creation!
 
 ## 🎯 Project Structure
 

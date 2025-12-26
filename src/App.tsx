@@ -114,6 +114,7 @@ function App() {
   const [rounds, setRounds] = useLocalStorage<number>('rounds', 1)
   const [increaseSpeed, setIncreaseSpeed] = useLocalStorage<boolean>('increase-speed', false)
   const [speedIncreasePercent, setSpeedIncreasePercent] = useLocalStorage<number>('speed-increase-percent', 5)
+  // Admin-only parameter: can only be set via ?admin_countdown=X.X URL parameter
   const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 3.0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
@@ -184,8 +185,8 @@ function App() {
         bpmAnalysis: currentBpmAnalysis,
         rounds: currentRounds,
         increaseSpeed: currentIncreaseSpeed,
-        speedIncreasePercent: currentSpeedIncreasePercent,
-        countdownDuration: currentCountdownDuration
+        speedIncreasePercent: currentSpeedIncreasePercent
+        // Note: countdownDuration is excluded - this is an admin-only parameter
       }
       
       const guid = await shareApi.create(config)
@@ -229,7 +230,6 @@ function App() {
           rounds: number
           increaseSpeed?: boolean
           speedIncreasePercent?: number
-          countdownDuration?: number
         } | null
         
         if (config) {
@@ -294,14 +294,6 @@ function App() {
             const speedValidation = validateNumber(config.speedIncreasePercent, 0, 100, 'Speed increase')
             if (speedValidation.valid) {
               setSpeedIncreasePercent(config.speedIncreasePercent)
-            }
-          }
-          
-          // Validate countdown duration
-          if (config.countdownDuration !== undefined) {
-            const countdownValidation = validateNumber(config.countdownDuration, 0.5, 10, 'Countdown duration')
-            if (countdownValidation.valid) {
-              setCountdownDuration(config.countdownDuration)
             }
           }
           
@@ -377,14 +369,6 @@ function App() {
             }
           }
           
-          // Validate countdown duration
-          if (decoded.countdownDuration !== undefined) {
-            const countdownValidation = validateNumber(decoded.countdownDuration, 0.5, 10, 'Countdown duration')
-            if (countdownValidation.valid) {
-              setCountdownDuration(decoded.countdownDuration)
-            }
-          }
-          
           toast.success('Loaded game configuration!')
           hasLoadedFromUrl.current = true
         } catch (error) {
@@ -394,6 +378,18 @@ function App() {
           } else {
             toast.error('Failed to load configuration')
           }
+        }
+      }
+      
+      // Admin-only parameter: countdown duration can only be set via URL parameter
+      // This is not included in user share links and is intended for administrators only
+      const adminCountdown = urlParams.get('admin_countdown')
+      if (adminCountdown) {
+        const countdownValue = parseFloat(sanitizeUrlParam(adminCountdown) || '3.0')
+        const countdownValidation = validateNumber(countdownValue, 0.5, 10, 'Admin countdown duration')
+        if (countdownValidation.valid) {
+          setCountdownDuration(countdownValue)
+          console.log(`Admin countdown duration set to: ${countdownValue}s`)
         }
       }
     } catch (error) {

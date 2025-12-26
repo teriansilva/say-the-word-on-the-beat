@@ -395,11 +395,12 @@ function App() {
     
     setIsFullscreen(true)
     setCurrentRound(1)
-    setCountdown(Math.ceil(currentCountdownDuration))
     
     // Calculate the interval time: total duration divided by number of countdown steps
     const countdownSteps = Math.ceil(currentCountdownDuration)
-    const intervalTime = (currentCountdownDuration * 1000) / countdownSteps
+    const intervalTime = Math.round((currentCountdownDuration * 1000) / countdownSteps)
+    
+    setCountdown(countdownSteps)
     
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {

@@ -114,6 +114,7 @@ function App() {
   const [rounds, setRounds] = useLocalStorage<number>('rounds', 1)
   const [increaseSpeed, setIncreaseSpeed] = useLocalStorage<boolean>('increase-speed', false)
   const [speedIncreasePercent, setSpeedIncreasePercent] = useLocalStorage<number>('speed-increase-percent', 5)
+  const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 3.0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
@@ -137,6 +138,7 @@ function App() {
   const currentRounds = rounds ?? 1
   const currentIncreaseSpeed = increaseSpeed ?? false
   const currentSpeedIncreasePercent = speedIncreasePercent ?? 5
+  const currentCountdownDuration = countdownDuration ?? 3.0
   const currentBpmAnalysis = bpmAnalysis ?? null
   const currentGridItems = useMemo(() => {
     if (currentImagePool.length > 0) {
@@ -393,7 +395,11 @@ function App() {
     
     setIsFullscreen(true)
     setCurrentRound(1)
-    setCountdown(3)
+    setCountdown(Math.ceil(currentCountdownDuration))
+    
+    // Calculate the interval time: total duration divided by number of countdown steps
+    const countdownSteps = Math.ceil(currentCountdownDuration)
+    const intervalTime = (currentCountdownDuration * 1000) / countdownSteps
     
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
@@ -402,12 +408,12 @@ function App() {
           setTimeout(() => {
             setCountdown(null)
             beginPlayback()
-          }, 1000)
+          }, intervalTime)
           return null
         }
         return prev - 1
       })
-    }, 1000)
+    }, intervalTime)
   }
 
   const beginPlayback = () => {

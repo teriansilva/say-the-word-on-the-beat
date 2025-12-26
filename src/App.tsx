@@ -398,7 +398,7 @@ function App() {
               setCountdownDuration(countdownValue)
               console.log(`Admin countdown duration set to: ${countdownValue}s`)
             } else {
-              console.warn(`Invalid admin_countdown value: ${countdownValidation.message}`)
+              console.warn(`Invalid admin_countdown value: ${countdownValidation.error}`)
             }
           }
         }

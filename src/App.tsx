@@ -8,7 +8,8 @@ import { Toaster } from '@/components/ui/sonner'
 import { PauseCircle } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { GridCard } from '@/components/GridCard'
-import { AudioUploader } from '@/components/AudioUploader'
+import { SpotifySelector } from '@/components/SpotifySelector'
+import type { SpotifyTrackWithBpm } from '@/lib/spotifyService'
 import { ImagePoolManager, type ImagePoolItem } from '@/components/ImagePoolManager'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ShareModal } from '@/components/ShareModal'
@@ -111,6 +112,7 @@ function App() {
   const [baseBpm, setBaseBpm] = useLocalStorage<number>('base-bpm', 91)
   const [customAudio, setCustomAudio] = useLocalStorage<string | null>('custom-audio', null)
   const [bpmAnalysis, setBpmAnalysis] = useLocalStorage<BpmAnalysisResult | null>('bpm-analysis', null)
+  const [spotifyTrack, setSpotifyTrack] = useLocalStorage<SpotifyTrackWithBpm | null>('spotify-track', null)
   const [rounds, setRounds] = useLocalStorage<number>('rounds', 1)
   const [increaseSpeed, setIncreaseSpeed] = useLocalStorage<boolean>('increase-speed', false)
   const [speedIncreasePercent, setSpeedIncreasePercent] = useLocalStorage<number>('speed-increase-percent', 5)
@@ -138,6 +140,7 @@ function App() {
   const currentIncreaseSpeed = increaseSpeed ?? false
   const currentSpeedIncreasePercent = speedIncreasePercent ?? 5
   const currentBpmAnalysis = bpmAnalysis ?? null
+  const currentSpotifyTrack = spotifyTrack ?? null
   const currentGridItems = useMemo(() => {
     if (currentImagePool.length > 0) {
       return generateGridFromPool(currentImagePool, currentDifficulty)
@@ -145,7 +148,7 @@ function App() {
     return gridItems ?? DEFAULT_ITEMS
   }, [currentImagePool, currentDifficulty, gridItems])
   
-  const baseBpmValue = customAudio ? currentBaseBpm : 91
+  const baseBpmValue = (currentSpotifyTrack || customAudio) ? currentBaseBpm : 91
   const basePlaybackSpeed = currentBpm / baseBpmValue
   
   const calculateRoundBpm = (roundNumber: number, audioTime?: number) => {
@@ -169,7 +172,7 @@ function App() {
     return basePlaybackSpeed * speedMultiplier
   }
   
-  const activeAudioUrl = customAudio || defaultAudio
+  const activeAudioUrl = (currentSpotifyTrack?.previewUrl || customAudio) || defaultAudio
 
   const generateShareLink = async (): Promise<string> => {
     try {
@@ -180,6 +183,7 @@ function App() {
         images: currentImagePool,
         audio: customAudio,
         bpmAnalysis: currentBpmAnalysis,
+        spotifyTrack: currentSpotifyTrack,
         rounds: currentRounds,
         increaseSpeed: currentIncreaseSpeed,
         speedIncreasePercent: currentSpeedIncreasePercent
@@ -223,6 +227,7 @@ function App() {
           images: ImagePoolItem[] | string[]
           audio: string | null
           bpmAnalysis?: BpmAnalysisResult | null
+          spotifyTrack?: SpotifyTrackWithBpm | null
           rounds: number
           increaseSpeed?: boolean
           speedIncreasePercent?: number
@@ -274,6 +279,11 @@ function App() {
           }
           
           if (config.bpmAnalysis) setBpmAnalysis(config.bpmAnalysis)
+          
+          // Validate and load spotify track
+          if (config.spotifyTrack) {
+            setSpotifyTrack(config.spotifyTrack)
+          }
           
           // Validate rounds
           if (config.rounds) {
@@ -416,7 +426,7 @@ function App() {
     let index = -1
     let roundCount = 1
     
-    const audioRef = customAudio ? customAudioRef : defaultAudioRef
+    const audioRef = (currentSpotifyTrack?.previewUrl || customAudio) ? customAudioRef : defaultAudioRef
     
     if (audioRef.current) {
       if (customAudio && currentBpmAnalysis && currentBpmAnalysis.silenceOffset) {
@@ -518,7 +528,7 @@ function App() {
     setCurrentRound(0)
     setIsFullscreen(false)
     setCountdown(null)
-    setDisplayBpm(customAudio && currentBpmAnalysis ? currentBaseBpm : 91)
+    setDisplayBpm((currentSpotifyTrack || (customAudio && currentBpmAnalysis)) ? currentBaseBpm : 91)
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
@@ -748,26 +758,24 @@ function App() {
             </div>
           </Card>
           
-          <AudioUploader
-            audioUrl={customAudio ?? null}
-            onAudioUpload={(url, analysis) => {
-              setCustomAudio(url)
-              setBpmAnalysis(analysis)
-              if (analysis) {
-                setBaseBpm(analysis.averageBpm)
-                setBpm(analysis.averageBpm)
-              }
-            }}
-            onAudioRemove={() => {
+          <SpotifySelector
+            selectedTrack={currentSpotifyTrack}
+            onTrackSelect={(track) => {
+              setSpotifyTrack(track)
+              setBaseBpm(track.bpm)
+              setBpm(track.bpm)
+              // Clear custom audio when spotify track is selected
               setCustomAudio(null)
               setBpmAnalysis(null)
+            }}
+            onTrackRemove={() => {
+              setSpotifyTrack(null)
               setBaseBpm(91)
               setBpm(91)
             }}
             bpm={currentBpm}
             onBpmChange={(value) => setBpm(value)}
             baseBpm={currentBaseBpm}
-            onBaseBpmChange={(value) => setBaseBpm(value)}
             isPlaying={isPlaying}
           />
           
@@ -801,8 +809,8 @@ function App() {
 
       <audio ref={defaultAudioRef} src={defaultAudio} preload="auto" loop />
       
-      {customAudio && (
-        <audio ref={customAudioRef} src={customAudio} preload="auto" loop />
+      {(currentSpotifyTrack?.previewUrl || customAudio) && (
+        <audio ref={customAudioRef} src={activeAudioUrl} preload="auto" loop />
       )}
 
       <ShareModal

@@ -114,6 +114,8 @@ function App() {
   const [rounds, setRounds] = useLocalStorage<number>('rounds', 1)
   const [increaseSpeed, setIncreaseSpeed] = useLocalStorage<boolean>('increase-speed', false)
   const [speedIncreasePercent, setSpeedIncreasePercent] = useLocalStorage<number>('speed-increase-percent', 5)
+  // Admin-only parameter: can only be set via ?admin_countdown=X.X URL parameter
+  const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 3.0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
@@ -137,6 +139,7 @@ function App() {
   const currentRounds = rounds ?? 1
   const currentIncreaseSpeed = increaseSpeed ?? false
   const currentSpeedIncreasePercent = speedIncreasePercent ?? 5
+  const currentCountdownDuration = countdownDuration ?? 3.0
   const currentBpmAnalysis = bpmAnalysis ?? null
   const currentGridItems = useMemo(() => {
     if (currentImagePool.length > 0) {
@@ -183,6 +186,7 @@ function App() {
         rounds: currentRounds,
         increaseSpeed: currentIncreaseSpeed,
         speedIncreasePercent: currentSpeedIncreasePercent
+        // Note: countdownDuration is excluded - this is an admin-only parameter
       }
       
       const guid = await shareApi.create(config)
@@ -376,6 +380,29 @@ function App() {
           }
         }
       }
+      
+      // Admin-only parameter: countdown duration can only be set via URL parameter
+      // This is not included in user share links and is intended for administrators only
+      const adminCountdown = urlParams.get('admin_countdown')
+      if (adminCountdown) {
+        const sanitizedCountdown = sanitizeUrlParam(adminCountdown)
+        if (!sanitizedCountdown) {
+          console.warn('Invalid admin_countdown parameter provided')
+        } else {
+          const countdownValue = parseFloat(sanitizedCountdown)
+          if (isNaN(countdownValue)) {
+            console.warn('Invalid admin_countdown value: must be a number')
+          } else {
+            const countdownValidation = validateNumber(countdownValue, 0.5, 10, 'Admin countdown duration')
+            if (countdownValidation.valid) {
+              setCountdownDuration(countdownValue)
+              console.log(`Admin countdown duration set to: ${countdownValue}s`)
+            } else {
+              console.warn(`Invalid admin_countdown value: ${countdownValidation.error}`)
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('Load error:', error)
       if (error instanceof TypeError) {
@@ -391,9 +418,20 @@ function App() {
   const startBeat = () => {
     if (isPlaying) return
     
+    // Validate countdown duration to prevent division by zero or invalid values
+    if (currentCountdownDuration < 0.5) {
+      toast.error('Invalid countdown duration')
+      return
+    }
+    
     setIsFullscreen(true)
     setCurrentRound(1)
-    setCountdown(3)
+    
+    // Calculate the interval time: total duration divided by number of countdown steps
+    const countdownSteps = Math.ceil(currentCountdownDuration)
+    const intervalTime = Math.round((currentCountdownDuration * 1000) / countdownSteps)
+    
+    setCountdown(countdownSteps)
     
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
@@ -402,12 +440,12 @@ function App() {
           setTimeout(() => {
             setCountdown(null)
             beginPlayback()
-          }, 1000)
+          }, intervalTime)
           return null
         }
         return prev - 1
       })
-    }, 1000)
+    }, intervalTime)
   }
 
   const beginPlayback = () => {

@@ -53,8 +53,12 @@ export function SpotifySelector({
       setSearchResults(results)
     } catch (error) {
       console.error('Search error:', error)
-      if (error instanceof Error && error.message.includes('credentials not configured')) {
-        toast.error('Spotify not configured. Please add your Spotify credentials to the .env file.')
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          toast.error('Cannot connect to backend. Please make sure the server is running.')
+        } else {
+          toast.error(`Search failed: ${error.message}`)
+        }
       } else {
         toast.error('Failed to search Spotify. Please try again.')
       }

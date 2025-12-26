@@ -20,6 +20,7 @@ See the platform live here: **[saywordsonbeat.com](https://saywordsonbeat.com/)*
 
 - Node.js (v18 or higher recommended)
 - npm or your preferred package manager
+- MongoDB (for backend data storage)
 - Spotify API credentials (for song search feature)
 
 ### Installation
@@ -31,44 +32,58 @@ git clone https://github.com/teriansilva/say-the-word-on-beat.git
 # Navigate to the project directory
 cd say-the-word-on-beat
 
-# Install dependencies
+# Install frontend dependencies
 npm install
 
-# Set up Spotify API credentials (see below)
-cp .env.example .env
-# Edit .env and add your Spotify credentials
-
-# Start the development server
-npm run dev
+# Install backend dependencies
+cd server
+npm install
+cd ..
 ```
-
-The application will be available at `http://localhost:5173` (or the port Vite assigns).
 
 ### 🎵 Spotify API Setup
 
-To enable the Spotify song search feature:
+The application uses a secure backend proxy to communicate with Spotify's API, keeping your credentials safe on the server.
 
-1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-2. Log in with your Spotify account
-3. Click "Create an App"
-4. Fill in the app name and description
-5. Once created, you'll see your **Client ID** and **Client Secret**
-6. Copy these credentials to your `.env` file:
+1. **Get Spotify Credentials:**
+   - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+   - Log in with your Spotify account
+   - Click "Create an App"
+   - Fill in the app name and description
+   - Once created, you'll see your **Client ID** and **Client Secret**
 
-```env
-VITE_SPOTIFY_CLIENT_ID=your_client_id_here
-VITE_SPOTIFY_CLIENT_SECRET=your_client_secret_here
+2. **Configure Backend:**
+   ```bash
+   cd server
+   cp .env.example .env
+   # Edit server/.env and add your Spotify credentials:
+   # SPOTIFY_CLIENT_ID=your_client_id_here
+   # SPOTIFY_CLIENT_SECRET=your_client_secret_here
+   ```
+
+3. **Configure Frontend (optional):**
+   ```bash
+   # From project root
+   cp .env.example .env
+   # Edit .env if you need to change the API URL
+   # VITE_API_URL=http://localhost:3001/api
+   ```
+
+### Running the Application
+
+You need to run both the backend and frontend:
+
+```bash
+# Terminal 1 - Start the backend server
+cd server
+npm run dev
+
+# Terminal 2 - Start the frontend
+npm run dev
 ```
 
-⚠️ **Security Warning for Production**: The current implementation uses Spotify's Client Credentials flow with the secret exposed in the frontend code. This is **only suitable for development/demonstration purposes**. 
-
-For production deployments, you should:
-- Implement a backend proxy server to handle Spotify authentication
-- Never expose your Client Secret in client-side code
-- Use environment variables on the server side only
-- Consider implementing rate limiting and request validation
-
-See the [Spotify Authorization Guide](https://developer.spotify.com/documentation/web-api/concepts/authorization) for secure production implementations.
+- **Backend API**: http://localhost:3001
+- **Frontend**: http://localhost:5173 (or the port Vite assigns)
 
 ### 🐳 Docker Deployment
 

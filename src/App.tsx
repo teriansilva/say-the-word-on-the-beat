@@ -385,11 +385,22 @@ function App() {
       // This is not included in user share links and is intended for administrators only
       const adminCountdown = urlParams.get('admin_countdown')
       if (adminCountdown) {
-        const countdownValue = parseFloat(sanitizeUrlParam(adminCountdown) || '3.0')
-        const countdownValidation = validateNumber(countdownValue, 0.5, 10, 'Admin countdown duration')
-        if (countdownValidation.valid) {
-          setCountdownDuration(countdownValue)
-          console.log(`Admin countdown duration set to: ${countdownValue}s`)
+        const sanitizedCountdown = sanitizeUrlParam(adminCountdown)
+        if (!sanitizedCountdown) {
+          console.warn('Invalid admin_countdown parameter provided')
+        } else {
+          const countdownValue = parseFloat(sanitizedCountdown)
+          if (isNaN(countdownValue)) {
+            console.warn('Invalid admin_countdown value: must be a number')
+          } else {
+            const countdownValidation = validateNumber(countdownValue, 0.5, 10, 'Admin countdown duration')
+            if (countdownValidation.valid) {
+              setCountdownDuration(countdownValue)
+              console.log(`Admin countdown duration set to: ${countdownValue}s`)
+            } else {
+              console.warn(`Invalid admin_countdown value: ${countdownValidation.message}`)
+            }
+          }
         }
       }
     } catch (error) {

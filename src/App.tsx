@@ -184,7 +184,8 @@ function App() {
         bpmAnalysis: currentBpmAnalysis,
         rounds: currentRounds,
         increaseSpeed: currentIncreaseSpeed,
-        speedIncreasePercent: currentSpeedIncreasePercent
+        speedIncreasePercent: currentSpeedIncreasePercent,
+        countdownDuration: currentCountdownDuration
       }
       
       const guid = await shareApi.create(config)
@@ -228,6 +229,7 @@ function App() {
           rounds: number
           increaseSpeed?: boolean
           speedIncreasePercent?: number
+          countdownDuration?: number
         } | null
         
         if (config) {
@@ -292,6 +294,14 @@ function App() {
             const speedValidation = validateNumber(config.speedIncreasePercent, 0, 100, 'Speed increase')
             if (speedValidation.valid) {
               setSpeedIncreasePercent(config.speedIncreasePercent)
+            }
+          }
+          
+          // Validate countdown duration
+          if (config.countdownDuration !== undefined) {
+            const countdownValidation = validateNumber(config.countdownDuration, 0.5, 10, 'Countdown duration')
+            if (countdownValidation.valid) {
+              setCountdownDuration(config.countdownDuration)
             }
           }
           
@@ -367,6 +377,14 @@ function App() {
             }
           }
           
+          // Validate countdown duration
+          if (decoded.countdownDuration !== undefined) {
+            const countdownValidation = validateNumber(decoded.countdownDuration, 0.5, 10, 'Countdown duration')
+            if (countdownValidation.valid) {
+              setCountdownDuration(decoded.countdownDuration)
+            }
+          }
+          
           toast.success('Loaded game configuration!')
           hasLoadedFromUrl.current = true
         } catch (error) {
@@ -392,6 +410,12 @@ function App() {
 
   const startBeat = () => {
     if (isPlaying) return
+    
+    // Validate countdown duration to prevent division by zero or negative values
+    if (currentCountdownDuration <= 0) {
+      toast.error('Invalid countdown duration')
+      return
+    }
     
     setIsFullscreen(true)
     setCurrentRound(1)

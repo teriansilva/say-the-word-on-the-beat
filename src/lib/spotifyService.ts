@@ -12,12 +12,15 @@ export interface SpotifyTrackWithBpm extends SpotifyTrack {
   bpm: number
 }
 
+// Default API URL for local development
+const DEFAULT_API_URL = 'http://localhost:3001/api'
+
 class SpotifyService {
   private apiBaseUrl: string
 
   constructor() {
     // Use backend API proxy to keep credentials secure
-    this.apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+    this.apiBaseUrl = import.meta.env.VITE_API_URL || DEFAULT_API_URL
   }
 
   async searchTracks(query: string, limit: number = 10): Promise<SpotifyTrack[]> {

@@ -54,7 +54,13 @@ export function SpotifySelector({
     } catch (error) {
       console.error('Search error:', error)
       if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        // Check for network-related errors
+        const isNetworkError = 
+          error.message.includes('Failed to fetch') || 
+          error.message.includes('NetworkError') ||
+          error.name === 'TypeError' && error.message.includes('fetch')
+        
+        if (isNetworkError) {
           toast.error('Cannot connect to backend. Please make sure the server is running.')
         } else {
           toast.error(`Search failed: ${error.message}`)

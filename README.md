@@ -5,10 +5,10 @@ A playful, interactive web platform that recreates the viral "Say the Word on Be
 ## ✨ Features
 
 - **🎨 Picture Grid Builder**: Create customizable grids with emojis or custom images (default 4x2, 8 cards)
-- **🎵 BPM Control & Audio Analysis**: Adjust tempo with intelligent BPM detection for custom audio files
+- **🎵 Spotify Integration**: Search and select songs directly from Spotify with automatic BPM detection
+- **🎵 BPM Control & Audio Analysis**: Adjust tempo with intelligent BPM detection
 - **⏱️ Beat Synchronization**: Visual and audio beat indicators that highlight each card in sequence
 - **🎥 Video Export**: Record and download your grid animation synchronized with audio
-- **🎧 Custom Audio Upload**: Upload your own audio files with automatic BPM analysis
 - **🔗 Share Links**: Generate shareable URLs encoding your complete game configuration
 
 ## 👀 Demo
@@ -20,6 +20,8 @@ See the platform live here: **[saywordsonbeat.com](https://saywordsonbeat.com/)*
 
 - Node.js (v18 or higher recommended)
 - npm or your preferred package manager
+- MongoDB (for backend data storage)
+- Spotify API credentials (for song search feature)
 
 ### Installation
 
@@ -30,14 +32,58 @@ git clone https://github.com/teriansilva/say-the-word-on-beat.git
 # Navigate to the project directory
 cd say-the-word-on-beat
 
-# Install dependencies
+# Install frontend dependencies
 npm install
 
-# Start the development server
+# Install backend dependencies
+cd server
+npm install
+cd ..
+```
+
+### 🎵 Spotify API Setup
+
+The application uses a secure backend proxy to communicate with Spotify's API, keeping your credentials safe on the server.
+
+1. **Get Spotify Credentials:**
+   - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+   - Log in with your Spotify account
+   - Click "Create an App"
+   - Fill in the app name and description
+   - Once created, you'll see your **Client ID** and **Client Secret**
+
+2. **Configure Backend:**
+   ```bash
+   cd server
+   cp .env.example .env
+   # Edit server/.env and add your Spotify credentials:
+   # SPOTIFY_CLIENT_ID=your_client_id_here
+   # SPOTIFY_CLIENT_SECRET=your_client_secret_here
+   ```
+
+3. **Configure Frontend (optional):**
+   ```bash
+   # From project root
+   cp .env.example .env
+   # Edit .env if you need to change the API URL
+   # VITE_API_URL=http://localhost:3001/api
+   ```
+
+### Running the Application
+
+You need to run both the backend and frontend:
+
+```bash
+# Terminal 1 - Start the backend server
+cd server
+npm run dev
+
+# Terminal 2 - Start the frontend
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173` (or the port Vite assigns).
+- **Backend API**: http://localhost:3001
+- **Frontend**: http://localhost:5173 (or the port Vite assigns)
 
 ### 🐳 Docker Deployment
 
@@ -65,13 +111,15 @@ See [DOCKER.md](DOCKER.md) for complete Docker deployment documentation includin
 - **Icons**: Phosphor Icons
 - **Animations**: Framer Motion
 - **State Management**: TanStack Query
+- **Audio API**: Spotify Web API (for song search and BPM detection)
 
 ## 📖 How It Works
 
-1. **Build Your Grid**: Click on cards to add emojis or upload custom images
-2. **Set the Beat**: Adjust BPM or upload custom audio for automatic tempo detection
-3. **Play & Practice**: Hit play to see the beat indicator highlight each card in rhythm
-4. **Export & Share**: Record your animation and share your creation!
+1. **Build Your Grid**: Upload custom images to create your picture grid
+2. **Choose Your Song**: Search Spotify for any song - BPM is automatically detected
+3. **Adjust Settings**: Fine-tune tempo, difficulty, and speed progression
+4. **Play & Practice**: Hit play to see the beat indicator highlight each card in rhythm
+5. **Export & Share**: Record your animation and share your creation!
 
 ## 🎯 Project Structure
 

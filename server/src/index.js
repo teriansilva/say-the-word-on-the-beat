@@ -8,6 +8,7 @@ const settingsRouter = require('./routes/settings');
 const imagesRouter = require('./routes/images');
 const audioRouter = require('./routes/audio');
 const sharesRouter = require('./routes/shares');
+const spotifyRouter = require('./routes/spotify');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +29,7 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/images', imagesRouter);
 app.use('/api/audio', audioRouter);
 app.use('/api/shares', sharesRouter);
+app.use('/api/spotify', spotifyRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

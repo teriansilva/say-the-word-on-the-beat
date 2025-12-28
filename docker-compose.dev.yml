@@ -23,8 +23,8 @@ services:
       dockerfile: Dockerfile
     container_name: say-the-word-api
     ports:
-      - "3001:3001"
-      - "9229:9229"  # Node.js debugger port
+      - "3847:3001"
+      - "9847:9229"  # Node.js debugger port
     restart: unless-stopped
     environment:
       - NODE_ENV=development
@@ -46,7 +46,7 @@ services:
     container_name: say-the-word-mongo
     restart: unless-stopped
     ports:
-      - "27017:27017"  # Expose MongoDB for direct access/debugging
+      - "27847:27017"  # Expose MongoDB for direct access/debugging
     volumes:
       - mongo-data:/data/db
     networks:

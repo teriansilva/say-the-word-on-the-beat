@@ -30,7 +30,7 @@ services:
       dockerfile: Dockerfile
     container_name: say-the-word-api
     ports:
-      - "3001:3001"
+      - "3847:3001"
     restart: always
     environment:
       - NODE_ENV=production

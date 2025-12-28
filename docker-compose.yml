@@ -24,7 +24,7 @@ services:
       dockerfile: Dockerfile
     container_name: say-the-word-api
     ports:
-      - "3001:3001"
+      - "3847:3001"
     restart: unless-stopped
     environment:
       - NODE_ENV=development
@@ -41,7 +41,7 @@ services:
     container_name: say-the-word-mongo
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "27847:27017"
     volumes:
       - mongo-data:/data/db
     networks:

@@ -17,6 +17,13 @@ import { Label } from '@/components/ui/label'
 import { getBpmAtTime, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
 import { FloatingMenu } from '@/components/FloatingMenu'
 import defaultAudio from '@/assets/audio/audio.mp3'
+import { 
+  isValidDataUrl, 
+  validateNumber, 
+  validateDifficulty, 
+  sanitizeUrlParam, 
+  isValidGuid 
+} from '@/lib/security'
 
 interface GridItem {
   content: string
@@ -195,10 +202,20 @@ function App() {
     
     try {
       const urlParams = new URLSearchParams(window.location.search)
-      const shareId = urlParams.get('share')
-      const configParam = urlParams.get('config')
+      const shareIdRaw = urlParams.get('share')
+      const configParamRaw = urlParams.get('config')
+      
+      // Sanitize URL parameters
+      const shareId = sanitizeUrlParam(shareIdRaw)
+      const configParam = sanitizeUrlParam(configParamRaw)
       
       if (shareId) {
+        // Validate GUID format
+        if (!isValidGuid(shareId)) {
+          toast.error('Invalid share link format')
+          return
+        }
+
         const config = await shareApi.get(shareId) as {
           bpm: number
           baseBpm?: number
@@ -212,20 +229,69 @@ function App() {
         } | null
         
         if (config) {
-          if (config.bpm) setBpm(config.bpm)
-          if (config.baseBpm) setBaseBpm(config.baseBpm)
-          if (config.difficulty) setDifficulty(config.difficulty)
-          if (config.images && Array.isArray(config.images)) {
-            const normalizedImages = config.images.map(img => 
-              typeof img === 'string' ? { url: img } : img
-            )
-            setImagePool(normalizedImages)
+          // Validate BPM values
+          if (config.bpm) {
+            const bpmValidation = validateNumber(config.bpm, 60, 180, 'BPM')
+            if (bpmValidation.valid) {
+              setBpm(config.bpm)
+            }
           }
-          if (config.audio) setCustomAudio(config.audio)
+          
+          if (config.baseBpm) {
+            const baseBpmValidation = validateNumber(config.baseBpm, 60, 180, 'Base BPM')
+            if (baseBpmValidation.valid) {
+              setBaseBpm(config.baseBpm)
+            }
+          }
+          
+          // Validate difficulty
+          if (config.difficulty && validateDifficulty(config.difficulty)) {
+            setDifficulty(config.difficulty)
+          }
+          
+          // Validate and sanitize images
+          if (config.images && Array.isArray(config.images)) {
+            const validImages = config.images
+              .map(img => typeof img === 'string' ? { url: img } : img)
+              .filter(img => {
+                // Validate data URL
+                if (!isValidDataUrl(img.url)) {
+                  console.warn('Invalid image data URL format detected in shared config')
+                  return false
+                }
+                return true
+              })
+              .slice(0, 8) // Limit to 8 images
+            
+            if (validImages.length > 0) {
+              setImagePool(validImages)
+            }
+          }
+          
+          // Validate audio URL
+          if (config.audio && isValidDataUrl(config.audio)) {
+            setCustomAudio(config.audio)
+          }
+          
           if (config.bpmAnalysis) setBpmAnalysis(config.bpmAnalysis)
-          if (config.rounds) setRounds(config.rounds)
+          
+          // Validate rounds
+          if (config.rounds) {
+            const roundsValidation = validateNumber(config.rounds, 1, 10, 'Rounds')
+            if (roundsValidation.valid) {
+              setRounds(config.rounds)
+            }
+          }
+          
           if (config.increaseSpeed !== undefined) setIncreaseSpeed(config.increaseSpeed)
-          if (config.speedIncreasePercent !== undefined) setSpeedIncreasePercent(config.speedIncreasePercent)
+          
+          // Validate speed increase percent
+          if (config.speedIncreasePercent !== undefined) {
+            const speedValidation = validateNumber(config.speedIncreasePercent, 0, 100, 'Speed increase')
+            if (speedValidation.valid) {
+              setSpeedIncreasePercent(config.speedIncreasePercent)
+            }
+          }
           
           toast.success('Loaded shared game configuration!')
           hasLoadedFromUrl.current = true
@@ -233,28 +299,90 @@ function App() {
           toast.error('Share link not found')
         }
       } else if (configParam) {
-        const decoded = JSON.parse(atob(configParam))
-        
-        if (decoded.bpm) setBpm(decoded.bpm)
-        if (decoded.baseBpm) setBaseBpm(decoded.baseBpm)
-        if (decoded.difficulty) setDifficulty(decoded.difficulty)
-        if (decoded.images && Array.isArray(decoded.images)) {
-          const normalizedImages = decoded.images.map((img: ImagePoolItem | string) => 
-            typeof img === 'string' ? { url: img } : img
-          )
-          setImagePool(normalizedImages)
+        try {
+          const decoded = JSON.parse(atob(configParam))
+          
+          // Validate BPM
+          if (decoded.bpm) {
+            const bpmValidation = validateNumber(decoded.bpm, 60, 180, 'BPM')
+            if (bpmValidation.valid) {
+              setBpm(decoded.bpm)
+            }
+          }
+          
+          if (decoded.baseBpm) {
+            const baseBpmValidation = validateNumber(decoded.baseBpm, 60, 180, 'Base BPM')
+            if (baseBpmValidation.valid) {
+              setBaseBpm(decoded.baseBpm)
+            }
+          }
+          
+          // Validate difficulty
+          if (decoded.difficulty && validateDifficulty(decoded.difficulty)) {
+            setDifficulty(decoded.difficulty)
+          }
+          
+          // Validate images
+          if (decoded.images && Array.isArray(decoded.images)) {
+            const validImages = decoded.images
+              .map((img: ImagePoolItem | string) => typeof img === 'string' ? { url: img } : img)
+              .filter((img: ImagePoolItem) => {
+                if (!isValidDataUrl(img.url)) {
+                  console.warn('Invalid image data URL format detected in config')
+                  return false
+                }
+                return true
+              })
+              .slice(0, 8)
+            
+            if (validImages.length > 0) {
+              setImagePool(validImages)
+            }
+          }
+          
+          // Validate audio
+          if (decoded.audio && isValidDataUrl(decoded.audio)) {
+            setCustomAudio(decoded.audio)
+          }
+          
+          if (decoded.bpmAnalysis) setBpmAnalysis(decoded.bpmAnalysis)
+          
+          // Validate rounds
+          if (decoded.rounds) {
+            const roundsValidation = validateNumber(decoded.rounds, 1, 10, 'Rounds')
+            if (roundsValidation.valid) {
+              setRounds(decoded.rounds)
+            }
+          }
+          
+          if (decoded.increaseSpeed !== undefined) setIncreaseSpeed(decoded.increaseSpeed)
+          
+          // Validate speed increase
+          if (decoded.speedIncreasePercent !== undefined) {
+            const speedValidation = validateNumber(decoded.speedIncreasePercent, 0, 100, 'Speed increase')
+            if (speedValidation.valid) {
+              setSpeedIncreasePercent(decoded.speedIncreasePercent)
+            }
+          }
+          
+          toast.success('Loaded game configuration!')
+          hasLoadedFromUrl.current = true
+        } catch (error) {
+          console.error('Failed to parse config:', error)
+          if (error instanceof SyntaxError) {
+            toast.error('Invalid configuration format - corrupted data')
+          } else {
+            toast.error('Failed to load configuration')
+          }
         }
-        if (decoded.audio) setCustomAudio(decoded.audio)
-        if (decoded.bpmAnalysis) setBpmAnalysis(decoded.bpmAnalysis)
-        if (decoded.rounds) setRounds(decoded.rounds)
-        if (decoded.increaseSpeed !== undefined) setIncreaseSpeed(decoded.increaseSpeed)
-        if (decoded.speedIncreasePercent !== undefined) setSpeedIncreasePercent(decoded.speedIncreasePercent)
-        
-        toast.success('Loaded shared game configuration!')
-        hasLoadedFromUrl.current = true
       }
     } catch (error) {
-      console.error('Failed to load from URL:', error)
+      console.error('Load error:', error)
+      if (error instanceof TypeError) {
+        toast.error('Network error loading shared configuration')
+      } else {
+        toast.error('Failed to load configuration')
+      }
     }
   }
 

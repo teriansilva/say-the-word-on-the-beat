@@ -1,3 +1,18 @@
+# Security
+
+## Project Security Audit
+
+This project has undergone a comprehensive security audit focusing on file upload security, XSS prevention, and injection vulnerabilities. See [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for the full audit report.
+
+### Key Security Features
+
+- **File Upload Validation**: Magic byte verification, MIME type checking, size limits
+- **XSS Prevention**: Input sanitization, HTML encoding, CSP headers
+- **Input Validation**: Bounds checking, type validation, URL parameter sanitization
+- **Safe Rendering**: No use of `dangerouslySetInnerHTML`, sanitized text display
+
+---
+
 Thanks for helping make GitHub safe for everyone.
 
 # Security

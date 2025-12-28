@@ -6,6 +6,7 @@ import { Upload, Waveform, X, ArrowSquareOut, Spinner, ArrowCounterClockwise } f
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { analyzeBpm, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
+import { validateAudioFile } from '@/lib/security'
 
 interface AudioUploaderProps {
   audioUrl: string | null
@@ -32,13 +33,10 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (!file.type.startsWith('audio/')) {
-      toast.error('Please select a valid audio file')
-      return
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Audio file must be smaller than 10MB')
+    // Validate audio file
+    const validation = await validateAudioFile(file)
+    if (!validation.valid) {
+      toast.error(validation.error || 'Invalid audio file')
       return
     }
 

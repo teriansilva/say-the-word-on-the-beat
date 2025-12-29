@@ -6,7 +6,7 @@ This guide explains how to deploy the Say the Word on Beat application using Doc
 
 The application consists of three services:
 - **web**: Nginx serving the React frontend (port 8091)
-- **api**: Node.js/Express backend API (port 3001)
+- **api**: Node.js/Express backend API (port 3847)
 - **mongo**: MongoDB database for persistent storage
 
 ## Prerequisites
@@ -53,9 +53,9 @@ docker-compose up -d --build
 | Service | URL | Description |
 |---------|-----|-------------|
 | Web App | http://localhost:8091 | Main application |
-| API | http://localhost:3001 | Backend REST API |
-| API Health | http://localhost:3001/api/health | Health check endpoint |
-| MongoDB | mongodb://localhost:27017 | Database (dev only) |
+| API | http://localhost:3847 | Backend REST API |
+| API Health | http://localhost:3847/api/health | Health check endpoint |
+| MongoDB | mongodb://localhost:27847 | Database (dev only) |
 
 ## Docker Compose Files
 
@@ -109,15 +109,15 @@ The application uses a multi-stage Docker build for both frontend and backend:
 
 Default ports:
 - Web: 8091
-- API: 3001
-- MongoDB: 27017 (dev only)
+- API: 3847
+- MongoDB: 27847 (dev only)
 
 To change ports, edit the appropriate docker-compose file:
 
 ```yaml
 ports:
   - "YOUR_PORT:80"  # Web
-  - "YOUR_PORT:3001"  # API
+  - "YOUR_PORT:3847"  # API
 ```
 
 ### Environment Variables
@@ -125,10 +125,11 @@ ports:
 | Variable | Service | Description |
 |----------|---------|-------------|
 | `NODE_ENV` | web, api | `development` or `production` |
-| `PORT` | api | API server port (default: 3001) |
+| `PORT` | api | API server port (default: 3847) |
 | `MONGODB_URI` | api | MongoDB connection string |
 | `CORS_ORIGIN` | api | Allowed CORS origin |
 | `DEBUG` | api | Debug logging (dev only) |
+| `STALE_DAYS` | api | Days before inactive games are cleaned up (default: 7) |
 
 ## Health Checks
 
@@ -149,7 +150,7 @@ The application uses a custom Nginx configuration (`nginx.conf`) that includes:
 - **Security headers** (X-Frame-Options, CSP, etc.)
 - **Static asset caching** (1 year for immutable assets)
 - **SPA routing support** (all routes redirect to index.html)
-- **API proxy** to Node.js backend (`/api/*` → `http://api:3001`)
+- **API proxy** to Node.js backend (`/api/*` → `http://api:3847`)
 - **Health check endpoint** at `/health`
 
 To modify the Nginx configuration, edit `nginx.conf` and rebuild the image.

@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "cleanup": "node src/tasks/cleanup.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.6",

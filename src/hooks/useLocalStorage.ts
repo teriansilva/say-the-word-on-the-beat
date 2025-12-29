@@ -5,6 +5,10 @@ const API_BASE = '/api'
 // Keys that should NOT be stored in localStorage (too large)
 const SKIP_LOCAL_STORAGE_KEYS = ['custom-audio', 'image-pool-v2']
 
+// Local storage expiration constants
+const LAST_VISIT_KEY = 'last-visit-timestamp'
+const EXPIRATION_DAYS = 7
+
 // All setting keys used by the app (for reset functionality)
 export const ALL_SETTING_KEYS = [
   'content-pool-v1',
@@ -21,6 +25,53 @@ export const ALL_SETTING_KEYS = [
   'countdown-duration',
   'image-pool-v2' // Legacy key
 ]
+
+/**
+ * Check if localStorage has expired (user hasn't visited in 7 days)
+ * and clear it if so. Updates the last visit timestamp.
+ */
+function checkAndClearExpiredStorage(): boolean {
+  try {
+    const lastVisit = localStorage.getItem(LAST_VISIT_KEY)
+    const now = Date.now()
+    
+    if (lastVisit) {
+      const lastVisitTime = parseInt(lastVisit, 10)
+      const daysSinceVisit = (now - lastVisitTime) / (1000 * 60 * 60 * 24)
+      
+      if (daysSinceVisit >= EXPIRATION_DAYS) {
+        console.log(`[Storage] Last visit was ${daysSinceVisit.toFixed(1)} days ago. Clearing expired data...`)
+        
+        // Clear all setting keys
+        for (const key of ALL_SETTING_KEYS) {
+          localStorage.removeItem(key)
+        }
+        
+        // Update last visit to now
+        localStorage.setItem(LAST_VISIT_KEY, now.toString())
+        
+        return true // Data was cleared
+      }
+    }
+    
+    // Update last visit timestamp
+    localStorage.setItem(LAST_VISIT_KEY, now.toString())
+    return false // Data was not cleared
+  } catch (err) {
+    console.warn('[Storage] Error checking expiration:', err)
+    return false
+  }
+}
+
+// Run expiration check once on module load
+let hasCheckedExpiration = false
+export function ensureStorageValid(): boolean {
+  if (!hasCheckedExpiration) {
+    hasCheckedExpiration = true
+    return checkAndClearExpiredStorage()
+  }
+  return false
+}
 
 // Session management
 let sessionPromise: Promise<void> | null = null

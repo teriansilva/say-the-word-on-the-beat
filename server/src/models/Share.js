@@ -23,6 +23,10 @@ const shareSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  lastPlayedAt: {
+    type: Date,
+    default: Date.now
+  },
   expiresAt: {
     type: Date
   },
@@ -61,8 +65,9 @@ const shareSchema = new mongoose.Schema({
 
 // TTL index for automatic expiration
 shareSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-shareSchema.index({ guid: 1 }, { unique: true });
 // Index for public shares sorted by likes
 shareSchema.index({ isPublic: 1, likes: -1, createdAt: -1 });
+// Index for cleanup job - find stale shares
+shareSchema.index({ lastPlayedAt: 1 });
 
 module.exports = mongoose.model('Share', shareSchema);

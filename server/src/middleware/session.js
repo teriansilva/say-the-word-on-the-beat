@@ -7,7 +7,12 @@ async function sessionMiddleware(req, res, next) {
   
   if (sessionId) {
     try {
-      const session = await Session.findById(sessionId);
+      // Update lastAccessed timestamp when session is used
+      const session = await Session.findByIdAndUpdate(
+        sessionId,
+        { $set: { lastAccessed: new Date() } },
+        { new: true }
+      );
       if (session) {
         req.sessionId = sessionId;
         return next();

@@ -1,0 +1,2 @@
+# Run cleanup task every day at 3:00 AM
+0 3 * * * cd /app && MONGODB_URI=mongodb://mongo:27017/saytheword node src/tasks/cleanup.js >> /var/log/cleanup.log 2>&1

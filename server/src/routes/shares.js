@@ -76,7 +76,12 @@ router.get('/public', async (req, res) => {
 // GET /api/shares/:guid - Get share by GUID
 router.get('/:guid', async (req, res) => {
   try {
-    const share = await Share.findOne({ guid: req.params.guid });
+    // Update lastPlayedAt timestamp when share is accessed
+    const share = await Share.findOneAndUpdate(
+      { guid: req.params.guid },
+      { $set: { lastPlayedAt: new Date() } },
+      { new: true }
+    );
     
     if (!share) {
       return res.status(404).json({ error: 'Share not found' });

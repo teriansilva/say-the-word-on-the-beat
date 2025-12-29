@@ -5,20 +5,21 @@ A playful, interactive web platform that recreates the viral "Say the Word on Be
 ## ✨ Features
 
 - **🎨 Content Pool**: Add emojis or custom images (up to 8 items) with optional custom words
-- **🎲 Random Emojis**: When no content is set, the game picks random emojis automatically
+- **🎲 Random Emojis**: When no content is set, the game uses random emojis that shuffle each round
 - **🎵 BPM Control & Audio Analysis**: Adjust tempo with intelligent BPM detection for custom audio files
 - **⏱️ Beat Synchronization**: Visual and audio beat indicators that highlight each card in sequence
-- **🔄 Multiple Rounds**: Play 1-10 rounds with automatic grid regeneration
+- **🔄 Multiple Rounds**: Play 1-10 rounds with automatic grid regeneration and mixing
 - **⚡ Speed Increase**: Optional progressive speed increase per round (1-10%)
 - **🎚️ Difficulty Modes**: Easy (pairs), Medium (slight variance), or Hard (all different)
 - **🎧 Custom Audio Upload**: Upload your own audio files with automatic BPM analysis
-- **⏰ Audio Start Time**: Set custom start position for your audio (0-300 seconds)
+- **⏰ Audio Start Time**: Set custom start position based on actual audio length
 - **⏱️ Countdown Duration**: Configurable countdown before game starts
 - **🎉 Completion Celebration**: Animated finish screen with confetti and celebration sound
 - **🌐 Community Games**: Browse and play publicly shared games from other users
 - **❤️ Like System**: Like and discover popular community games
 - **🔗 Share Links**: Generate shareable URLs encoding your complete game configuration
 - **🔄 Reset**: One-click reset to restore all settings to defaults
+- **⚡ Debounced Controls**: Smooth slider interactions with rate-limit-friendly persistence
 
 ## 👀 Demo
 See the platform live here: **[saywordsonbeat.com](https://saywordsonbeat.com/)**

@@ -130,7 +130,7 @@ export function ImagePoolManager({ images, onImagesChange }: ImagePoolManagerPro
                   />
                   <button
                     onClick={() => handleRemoveImage(index)}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:scale-110 active:scale-95 shadow-md z-10"
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:scale-110 active:scale-95 shadow-md z-10"
                   >
                     <X size={14} weight="bold" />
                   </button>

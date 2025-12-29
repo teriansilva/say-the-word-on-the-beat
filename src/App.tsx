@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { useLocalStorage, shareApi } from '@/hooks/useLocalStorage'
+import { useLocalStorage, shareApi, resetAllSettings } from '@/hooks/useLocalStorage'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Toaster } from '@/components/ui/sonner'
 import { PauseCircle } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { motion } from 'framer-motion'
 import { GridCard } from '@/components/GridCard'
 import { AudioUploader } from '@/components/AudioUploader'
 import { ContentPoolManager, type ContentPoolItem } from '@/components/ContentPoolManager'
@@ -17,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { getBpmAtTime, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
 import { FloatingMenu } from '@/components/FloatingMenu'
 import defaultAudio from '@/assets/audio/audio.mp3'
+import completeSound from '@/assets/audio/cheer.mp3'
 import { 
   isValidDataUrl, 
   validateNumber, 
@@ -41,6 +43,18 @@ const DEFAULT_EMOJIS = [
   '🔔', '🧱', '🕐', '🪨', '⭐', '🌙', '☀️', '🌈', '❄️', '🔥',
   '🎸', '🎹', '🥁', '🎺', '🎻', '🎤', '🎧', '📚', '✏️', '🔑',
   '🧢', '🦇', '🐝', '🦋', '🐛', '🌸', '🌻', '🌹', '🍀', '🌵'
+]
+
+// Default content pool with initial emojis
+const DEFAULT_CONTENT_POOL: ContentPoolItem[] = [
+  { content: '🐱', type: 'emoji' },
+  { content: '🐶', type: 'emoji' },
+  { content: '🍎', type: 'emoji' },
+  { content: '⚽', type: 'emoji' },
+  { content: '⭐', type: 'emoji' },
+  { content: '🎸', type: 'emoji' },
+  { content: '🌈', type: 'emoji' },
+  { content: '🔥', type: 'emoji' },
 ]
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -152,18 +166,19 @@ function generateGridFromPool(items: ContentPoolItem[], difficulty: Difficulty):
 }
 
 function App() {
-  const [contentPool, setContentPool] = useLocalStorage<ContentPoolItem[]>('content-pool-v1', [])
+  const [contentPool, setContentPool] = useLocalStorage<ContentPoolItem[]>('content-pool-v1', DEFAULT_CONTENT_POOL)
   const [difficulty, setDifficulty] = useLocalStorage<Difficulty>('difficulty', 'medium')
   const [gridItems, setGridItems] = useLocalStorage<GridItem[]>('grid-items', [])
   const [bpm, setBpm] = useLocalStorage<number>('bpm-value', 91)
   const [baseBpm, setBaseBpm] = useLocalStorage<number>('base-bpm', 91)
   const [customAudio, setCustomAudio] = useLocalStorage<string | null>('custom-audio', null)
   const [bpmAnalysis, setBpmAnalysis] = useLocalStorage<BpmAnalysisResult | null>('bpm-analysis', null)
+  const [audioStartTime, setAudioStartTime] = useLocalStorage<number>('audio-start-time', 0)
   const [rounds, setRounds] = useLocalStorage<number>('rounds', 3)
   const [increaseSpeed, setIncreaseSpeed] = useLocalStorage<boolean>('increase-speed', false)
   const [speedIncreasePercent, setSpeedIncreasePercent] = useLocalStorage<number>('speed-increase-percent', 5)
   // Admin-only parameter: can only be set via ?admin_countdown=X.X URL parameter
-  const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 2.0)
+  const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 3.0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
@@ -177,6 +192,7 @@ function App() {
   const intervalRef = useRef<number | null>(null)
   const customAudioRef = useRef<HTMLAudioElement | null>(null)
   const defaultAudioRef = useRef<HTMLAudioElement | null>(null)
+  const completeSoundRef = useRef<HTMLAudioElement | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const hasLoadedFromUrl = useRef(false)
   const bpmCheckIntervalRef = useRef<number | null>(null)
@@ -190,6 +206,7 @@ function App() {
   const currentSpeedIncreasePercent = speedIncreasePercent ?? 5
   const currentCountdownDuration = countdownDuration ?? 3.0
   const currentBpmAnalysis = bpmAnalysis ?? null
+  const currentAudioStartTime = audioStartTime ?? 0
   const currentGridItems = useMemo(() => {
     return generateGridFromPool(currentContentPool, currentDifficulty)
   }, [currentContentPool, currentDifficulty])
@@ -229,6 +246,7 @@ function App() {
         content: currentContentPool,
         audio: customAudio,
         bpmAnalysis: currentBpmAnalysis,
+        audioStartTime: currentAudioStartTime,
         rounds: currentRounds,
         increaseSpeed: currentIncreaseSpeed,
         speedIncreasePercent: currentSpeedIncreasePercent
@@ -496,11 +514,11 @@ function App() {
     // Start playing music immediately with the countdown
     const audioRef = customAudio ? customAudioRef : defaultAudioRef
     if (audioRef.current) {
-      if (customAudio && currentBpmAnalysis && currentBpmAnalysis.silenceOffset) {
-        audioRef.current.currentTime = currentBpmAnalysis.silenceOffset
-      } else {
-        audioRef.current.currentTime = 0
-      }
+      // Use custom start time if set, otherwise fall back to silence offset
+      const startTime = customAudio && currentAudioStartTime > 0 
+        ? currentAudioStartTime 
+        : (customAudio && currentBpmAnalysis?.silenceOffset) || 0
+      audioRef.current.currentTime = startTime
       audioRef.current.playbackRate = calculatePlaybackSpeed(1)
       audioRef.current.play().catch((error) => {
         console.error('Audio play error:', error)
@@ -587,6 +605,11 @@ function App() {
           setIsPlaying(false)
           setActiveIndex(null)
           setIsFinished(true)
+          // Play completion sound
+          if (completeSoundRef.current) {
+            completeSoundRef.current.currentTime = 0
+            completeSoundRef.current.play().catch(err => console.debug('Complete sound play error:', err))
+          }
           return
         }
         
@@ -650,7 +673,9 @@ function App() {
     
     if (customAudioRef.current) {
       customAudioRef.current.pause()
-      const resetTime = currentBpmAnalysis?.silenceOffset || 0
+      const resetTime = currentAudioStartTime > 0 
+        ? currentAudioStartTime 
+        : (currentBpmAnalysis?.silenceOffset || 0)
       customAudioRef.current.currentTime = resetTime
       customAudioRef.current.playbackRate = 1
     }
@@ -718,21 +743,89 @@ function App() {
               </div>
             </div>
           ) : isFinished ? (
-            <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8">
-              <div className="text-center space-y-8">
-                <div className="space-y-4">
-                  <h2 
+            <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8 overflow-hidden relative">
+              {/* Confetti particles */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {[...Array(50)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-3 h-3 rounded-sm"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: -20,
+                      backgroundColor: [
+                        '#E8744F', // primary coral
+                        '#5BA3D0', // secondary blue
+                        '#F5D547', // yellow
+                        '#4ADE80', // green
+                        '#F472B6', // pink
+                        '#A78BFA', // purple
+                      ][i % 6],
+                      rotate: Math.random() * 360,
+                    }}
+                    initial={{ y: -20, opacity: 1, rotate: 0 }}
+                    animate={{
+                      y: window.innerHeight + 100,
+                      opacity: [1, 1, 0],
+                      rotate: Math.random() * 720 - 360,
+                      x: Math.random() * 200 - 100,
+                    }}
+                    transition={{
+                      duration: 2 + Math.random() * 2,
+                      delay: Math.random() * 0.5,
+                      ease: 'easeOut',
+                    }}
+                  />
+                ))}
+              </div>
+              
+              <motion.div 
+                className="text-center space-y-8 z-10"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 300,
+                  damping: 15,
+                  delay: 0.1,
+                }}
+              >
+                <motion.div 
+                  className="space-y-4"
+                  initial={{ y: 50 }}
+                  animate={{ y: 0 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.2 }}
+                >
+                  <motion.h2 
                     className="text-6xl md:text-8xl font-bold text-primary"
                     style={{ textShadow: '0 4px 24px rgba(232, 116, 79, 0.3)' }}
+                    animate={{ 
+                      scale: [1, 1.05, 1],
+                    }}
+                    transition={{
+                      duration: 0.6,
+                      repeat: Infinity,
+                      repeatDelay: 1.5,
+                    }}
                   >
                     🎉 Complete!
-                  </h2>
-                  <p className="text-2xl md:text-3xl font-semibold text-secondary">
+                  </motion.h2>
+                  <motion.p 
+                    className="text-2xl md:text-3xl font-semibold text-secondary"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
                     You finished {currentRounds} round{currentRounds > 1 ? 's' : ''}!
-                  </p>
-                </div>
+                  </motion.p>
+                </motion.div>
                 
-                <div className="flex flex-col items-center gap-4">                  
+                <motion.div 
+                  className="flex flex-col items-center gap-4"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                >                  
                   <Button
                     size="lg"
                     variant="default"
@@ -741,8 +834,8 @@ function App() {
                   >
                     Exit
                   </Button>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             </div>
           ) : (
             <div className="w-full h-full flex flex-col items-center p-4 md:p-8 overflow-y-auto">
@@ -804,6 +897,28 @@ function App() {
             items={currentContentPool}
             onItemsChange={(items) => setContentPool(items)}
           />
+          
+          <Card className="p-4 border-2">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-foreground">
+                  Rounds
+                </label>
+                <Badge variant="secondary" className="text-sm font-bold">
+                  {currentRounds}
+                </Badge>
+              </div>
+              <Slider
+                value={[currentRounds]}
+                onValueChange={([value]) => setRounds(value)}
+                min={1}
+                max={10}
+                step={1}
+                className="w-full"
+                disabled={isPlaying}
+              />
+            </div>
+          </Card>
           
           <Card className="p-4 border-2">
             <div className="space-y-3">
@@ -896,6 +1011,7 @@ function App() {
             onAudioUpload={(url, analysis) => {
               setCustomAudio(url)
               setBpmAnalysis(analysis)
+              setAudioStartTime(0) // Reset start time when new audio is uploaded
               if (analysis) {
                 setBaseBpm(analysis.averageBpm)
                 setBpm(analysis.averageBpm)
@@ -906,43 +1022,42 @@ function App() {
               setBpmAnalysis(null)
               setBaseBpm(91)
               setBpm(91)
+              setAudioStartTime(0)
             }}
             bpm={currentBpm}
             onBpmChange={(value) => setBpm(value)}
             baseBpm={currentBaseBpm}
             onBaseBpmChange={(value) => setBaseBpm(value)}
+            startTime={currentAudioStartTime}
+            onStartTimeChange={(value) => setAudioStartTime(value)}
+            countdownDuration={currentCountdownDuration}
+            onCountdownDurationChange={(value) => setCountdownDuration(value)}
             isPlaying={isPlaying}
           />
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-lg font-semibold text-foreground">
-                Rounds
-              </label>
-              <Badge variant="secondary" className="text-base font-bold">
-                {currentRounds}
-              </Badge>
-            </div>
-            <Slider
-              value={[currentRounds]}
-              onValueChange={([value]) => setRounds(value)}
-              min={1}
-              max={10}
-              step={1}
-              className="w-full"
-              disabled={isPlaying}
-            />
-          </div>
         </div>
 
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-sm text-muted-foreground space-y-2">
           <p>
-            Add emojis or images to the pool • Choose difficulty • Cards auto-generate based on your settings
-          </p>
+            Made with ❤️ by  <a 
+            href="https://superstatus.io" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          >TerianSilva</a>
+         &nbsp;| &nbsp;
+          <a 
+            href="https://github.com/teriansilva/say-the-word-on-the-beat" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          >
+            🐙 GitHub
+          </a> </p>
         </div>
       </div>
 
       <audio ref={defaultAudioRef} src={defaultAudio} preload="auto" loop />
+      <audio ref={completeSoundRef} src={completeSound} preload="auto" />
       
       {customAudio && (
         <audio ref={customAudioRef} src={customAudio} preload="auto" loop />
@@ -959,6 +1074,11 @@ function App() {
           isPlaying={isPlaying}
           onPlayPause={handlePlayPause}
           onShareClick={() => setShareModalOpen(true)}
+          onResetClick={async () => {
+            await resetAllSettings()
+            toast.success('Game reset! Reloading...')
+            setTimeout(() => window.location.reload(), 500)
+          }}
         />
       )}
     </div>

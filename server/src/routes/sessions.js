@@ -1,11 +1,13 @@
 const express = require('express');
 const Session = require('../models/Session');
 const { SESSION_COOKIE } = require('../middleware/session');
+const { sessionCreationLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
 // POST /api/sessions - Create new session
-router.post('/', async (req, res) => {
+// Protected by: IP rate limit (5 sessions per hour)
+router.post('/', sessionCreationLimiter, async (req, res) => {
   try {
     const session = new Session();
     await session.save();

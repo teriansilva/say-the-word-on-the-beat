@@ -1,9 +1,20 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const Share = require('../models/Share');
-const { sessionMiddleware } = require('../middleware/session');
+const Session = require('../models/Session');
+const { sessionMiddleware, requireSession } = require('../middleware/session');
+const { 
+  shareCreationLimiter, 
+  likeLimiter,
+  honeypotValidator,
+  timingValidator,
+  updateSessionShareTime
+} = require('../middleware/rateLimit');
 
 const router = express.Router();
+
+// Minimum time between share creations per session (60 seconds)
+const SHARE_COOLDOWN_MS = 60 * 1000;
 
 router.use(sessionMiddleware);
 
@@ -108,15 +119,43 @@ router.get('/:guid', async (req, res) => {
 });
 
 // POST /api/shares - Create new share
-router.post('/', async (req, res) => {
+// Protected by: IP rate limit, honeypot, timing check, session cooldown
+router.post('/', 
+  shareCreationLimiter,
+  honeypotValidator,
+  timingValidator,
+  async (req, res) => {
   try {
     const { config, imageIds, audioId, expiresInDays, isPublic, title } = req.body;
     
     if (!config) {
       return res.status(400).json({ error: 'config is required' });
     }
+
+    // Session-based cooldown check
+    if (req.sessionId) {
+      const session = await Session.findById(req.sessionId);
+      
+      if (session && session.lastShareCreatedAt) {
+        const elapsed = Date.now() - session.lastShareCreatedAt.getTime();
+        
+        if (elapsed < SHARE_COOLDOWN_MS) {
+          const waitTime = Math.ceil((SHARE_COOLDOWN_MS - elapsed) / 1000);
+          return res.status(429).json({
+            error: `Please wait ${waitTime} seconds before sharing again.`,
+            retryAfter: waitTime
+          });
+        }
+      }
+    }
     
     const guid = uuidv4();
+    
+    // Sanitize title - remove any HTML/script tags
+    const sanitizedTitle = (title || '')
+      .slice(0, 100)
+      .replace(/<[^>]*>/g, '')
+      .replace(/[<>]/g, '');
     
     const shareData = {
       guid,
@@ -125,8 +164,13 @@ router.post('/', async (req, res) => {
       audioId: audioId || null,
       createdAt: new Date(),
       isPublic: !!isPublic,
-      title: (title || '').slice(0, 100),
-      preview: extractPreview(config)
+      title: sanitizedTitle,
+      preview: extractPreview(config),
+      // Track who created this share
+      creatorSessionId: req.sessionId || null,
+      creatorIp: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+                 req.headers['x-real-ip'] || 
+                 req.ip
     };
     
     // Optional expiration (public shares don't expire by default)
@@ -136,6 +180,14 @@ router.post('/', async (req, res) => {
     
     const share = new Share(shareData);
     await share.save();
+    
+    // Update session with share creation time for cooldown
+    if (req.sessionId) {
+      await Session.findByIdAndUpdate(req.sessionId, {
+        $set: { lastShareCreatedAt: new Date() },
+        $inc: { shareCount: 1 }
+      });
+    }
     
     res.status(201).json({
       guid: share.guid,
@@ -151,7 +203,8 @@ router.post('/', async (req, res) => {
 });
 
 // POST /api/shares/:guid/like - Toggle like on a share
-router.post('/:guid/like', async (req, res) => {
+// Protected by: IP rate limit, session requirement
+router.post('/:guid/like', likeLimiter, async (req, res) => {
   try {
     const sessionId = req.sessionId;
     

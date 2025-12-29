@@ -255,7 +255,7 @@ export interface PublicSharesResponse {
  * API client for share functionality
  */
 export const shareApi = {
-  async create(config: Record<string, unknown>, options?: { isPublic?: boolean; title?: string }): Promise<string> {
+  async create(config: Record<string, unknown>, options?: { isPublic?: boolean; title?: string; _submit_time?: number }): Promise<string> {
     await ensureSession()
     
     const response = await fetch(`${API_BASE}/shares`, {
@@ -265,12 +265,15 @@ export const shareApi = {
       body: JSON.stringify({ 
         config,
         isPublic: options?.isPublic || false,
-        title: options?.title || ''
+        title: options?.title || '',
+        // Bot prevention: timing info
+        _submit_time: options?._submit_time || Date.now()
       })
     })
     
     if (!response.ok) {
-      throw new Error('Failed to create share')
+      const data = await response.json().catch(() => ({}))
+      throw new Error(data.error || 'Failed to create share')
     }
     
     const data = await response.json()

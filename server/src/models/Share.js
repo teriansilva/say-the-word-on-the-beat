@@ -30,6 +30,15 @@ const shareSchema = new mongoose.Schema({
   expiresAt: {
     type: Date
   },
+  // Creator tracking (for bot prevention and moderation)
+  creatorSessionId: {
+    type: String,
+    default: null
+  },
+  creatorIp: {
+    type: String,
+    default: null
+  },
   // Social features
   isPublic: {
     type: Boolean,
@@ -47,6 +56,11 @@ const shareSchema = new mongoose.Schema({
   likedBy: [{
     type: String // Session IDs that have liked this share
   }],
+  // Bot prevention: flag for suspicious content
+  flaggedAsSpam: {
+    type: Boolean,
+    default: false
+  },
   // Preview data for quick display (computed from config on save)
   preview: {
     contentItems: [{

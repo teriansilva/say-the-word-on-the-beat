@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 interface ShareModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onGenerateShare: (options: { isPublic: boolean; title: string }) => Promise<string>
+  onGenerateShare: (options: { isPublic: boolean; title: string; _hp_field?: string; _submit_time?: number }) => Promise<string>
 }
 
 export function ShareModal({ open, onOpenChange, onGenerateShare }: ShareModalProps) {
@@ -19,11 +19,35 @@ export function ShareModal({ open, onOpenChange, onGenerateShare }: ShareModalPr
   const [isGenerating, setIsGenerating] = useState(false)
   const [isPublic, setIsPublic] = useState(false)
   const [title, setTitle] = useState('')
+  // Honeypot field - should remain empty, bots will fill it
+  const [honeypot, setHoneypot] = useState('')
+  // Track when dialog opened for timing validation
+  const openedAtRef = useRef<number>(0)
+
+  // Record when dialog opens
+  useEffect(() => {
+    if (open) {
+      openedAtRef.current = Date.now()
+    }
+  }, [open])
 
   const handleGenerate = async () => {
+    // Check honeypot - if filled, likely a bot
+    if (honeypot) {
+      // Silently fail for bots
+      console.log('[Bot Detection] Honeypot triggered on client')
+      toast.success('Share link generated!')
+      return
+    }
+
     setIsGenerating(true)
     try {
-      const url = await onGenerateShare({ isPublic, title: title.trim() })
+      const url = await onGenerateShare({ 
+        isPublic, 
+        title: title.trim(),
+        // Pass timing info to server for validation
+        _submit_time: openedAtRef.current
+      })
       setShareUrl(url)
       if (isPublic) {
         toast.success('Game shared publicly!')
@@ -31,7 +55,11 @@ export function ShareModal({ open, onOpenChange, onGenerateShare }: ShareModalPr
         toast.success('Share link generated!')
       }
     } catch (error) {
-      toast.error('Failed to generate share link')
+      if (error instanceof Error && error.message.includes('wait')) {
+        toast.error(error.message)
+      } else {
+        toast.error('Failed to generate share link')
+      }
     } finally {
       setIsGenerating(false)
     }
@@ -54,6 +82,7 @@ export function ShareModal({ open, onOpenChange, onGenerateShare }: ShareModalPr
       setShareUrl('')
       setIsPublic(false)
       setTitle('')
+      setHoneypot('')
     }
     onOpenChange(open)
   }
@@ -74,6 +103,20 @@ export function ShareModal({ open, onOpenChange, onGenerateShare }: ShareModalPr
         <div className="space-y-4 py-4">
           {!shareUrl ? (
             <>
+              {/* Honeypot field - hidden from humans, visible to bots */}
+              <div className="absolute -left-[9999px] opacity-0 pointer-events-none" aria-hidden="true">
+                <label htmlFor="website-url">Leave this field empty</label>
+                <input
+                  type="text"
+                  id="website-url"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
               {/* Title input */}
               <div className="space-y-2">
                 <Label htmlFor="share-title">Game Title (optional)</Label>

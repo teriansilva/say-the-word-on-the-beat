@@ -8,6 +8,21 @@ const sessionSchema = new mongoose.Schema({
   lastAccessed: {
     type: Date,
     default: Date.now
+  },
+  // Bot prevention: track last share creation for cooldown
+  lastShareCreatedAt: {
+    type: Date,
+    default: null
+  },
+  // Track share creation count for additional rate limiting
+  shareCount: {
+    type: Number,
+    default: 0
+  },
+  // Track suspicious activity
+  suspiciousActivityCount: {
+    type: Number,
+    default: 0
   }
 });
 

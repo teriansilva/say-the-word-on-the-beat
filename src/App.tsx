@@ -258,7 +258,7 @@ function App() {
   
   const activeAudioUrl = customAudio || defaultAudio
 
-  const generateShareLink = async (options: { isPublic: boolean; title: string }): Promise<string> => {
+  const generateShareLink = async (options: { isPublic: boolean; title: string; _submit_time?: number }): Promise<string> => {
     try {
       const config = {
         bpm: currentBpm,
@@ -276,7 +276,8 @@ function App() {
       
       const guid = await shareApi.create(config, { 
         isPublic: options.isPublic, 
-        title: options.title 
+        title: options.title,
+        _submit_time: options._submit_time
       })
       
       const url = new URL(window.location.href)

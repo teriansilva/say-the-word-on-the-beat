@@ -9,7 +9,7 @@ import { PauseCircle } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { GridCard } from '@/components/GridCard'
 import { AudioUploader } from '@/components/AudioUploader'
-import { ImagePoolManager, type ImagePoolItem } from '@/components/ImagePoolManager'
+import { ContentPoolManager, type ContentPoolItem } from '@/components/ContentPoolManager'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ShareModal } from '@/components/ShareModal'
 import { Switch } from '@/components/ui/switch'
@@ -33,20 +33,68 @@ interface GridItem {
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 
-const DEFAULT_ITEMS: GridItem[] = [
-  { content: '🐱', type: 'emoji' },
-  { content: '🧢', type: 'emoji' },
-  { content: '🦇', type: 'emoji' },
-  { content: '🍉', type: 'emoji' },
-  { content: '🔔', type: 'emoji' },
-  { content: '🧱', type: 'emoji' },
-  { content: '🕐', type: 'emoji' },
-  { content: '🪨', type: 'emoji' },
+// Expanded emoji pool for random selection when no content is provided
+const DEFAULT_EMOJIS = [
+  '🐱', '🐶', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸',
+  '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍒', '🍑', '🥭', '🍍', '🥝',
+  '⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🎱', '🏓', '🏸', '🥊',
+  '🔔', '🧱', '🕐', '🪨', '⭐', '🌙', '☀️', '🌈', '❄️', '🔥',
+  '🎸', '🎹', '🥁', '🎺', '🎻', '🎤', '🎧', '📚', '✏️', '🔑',
+  '🧢', '🦇', '🐝', '🦋', '🐛', '🌸', '🌻', '🌹', '🍀', '🌵'
 ]
 
-function generateGridFromPool(images: ImagePoolItem[], difficulty: Difficulty): GridItem[] {
-  if (images.length === 0) {
-    return DEFAULT_ITEMS
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
+function generateRandomEmojiGrid(difficulty: Difficulty): GridItem[] {
+  const shuffled = shuffleArray(DEFAULT_EMOJIS)
+  const gridSize = 8
+  const result: GridItem[] = []
+
+  switch (difficulty) {
+    case 'easy': {
+      // Pairs of same emojis
+      for (let i = 0; i < gridSize; i += 2) {
+        const emoji = shuffled[i % shuffled.length]
+        result.push({ content: emoji, type: 'emoji' })
+        result.push({ content: emoji, type: 'emoji' })
+      }
+      break
+    }
+    case 'medium': {
+      // Mostly different with occasional repeats
+      let lastUsed: string | null = null
+      for (let i = 0; i < gridSize; i++) {
+        const available = lastUsed 
+          ? shuffled.filter(e => e !== lastUsed)
+          : shuffled
+        const emoji = available[Math.floor(Math.random() * available.length)]
+        result.push({ content: emoji, type: 'emoji' })
+        lastUsed = Math.random() > 0.3 ? emoji : null
+      }
+      break
+    }
+    case 'hard': {
+      // All different
+      for (let i = 0; i < gridSize; i++) {
+        result.push({ content: shuffled[i % shuffled.length], type: 'emoji' })
+      }
+      break
+    }
+  }
+
+  return result
+}
+
+function generateGridFromPool(items: ContentPoolItem[], difficulty: Difficulty): GridItem[] {
+  if (items.length === 0) {
+    return generateRandomEmojiGrid(difficulty)
   }
 
   const gridSize = 8
@@ -55,27 +103,27 @@ function generateGridFromPool(images: ImagePoolItem[], difficulty: Difficulty): 
   switch (difficulty) {
     case 'easy': {
       for (let i = 0; i < gridSize; i += 2) {
-        const randomImage = images[Math.floor(Math.random() * images.length)]
-        result.push({ content: randomImage.url, type: 'image', word: randomImage.word })
-        result.push({ content: randomImage.url, type: 'image', word: randomImage.word })
+        const randomItem = items[Math.floor(Math.random() * items.length)]
+        result.push({ content: randomItem.content, type: randomItem.type, word: randomItem.word })
+        result.push({ content: randomItem.content, type: randomItem.type, word: randomItem.word })
       }
       break
     }
 
     case 'medium': {
-      let lastUsed: ImagePoolItem | null = null
+      let lastUsed: ContentPoolItem | null = null
       for (let i = 0; i < gridSize; i++) {
-        const availableImages = lastUsed 
-          ? images.filter(img => img.url !== lastUsed!.url)
-          : images
+        const availableItems = lastUsed 
+          ? items.filter(item => item.content !== lastUsed!.content)
+          : items
         
-        const pool = availableImages.length > 0 ? availableImages : images
-        const randomImage = pool[Math.floor(Math.random() * pool.length)]
+        const pool = availableItems.length > 0 ? availableItems : items
+        const randomItem = pool[Math.floor(Math.random() * pool.length)]
         
-        result.push({ content: randomImage.url, type: 'image', word: randomImage.word })
+        result.push({ content: randomItem.content, type: randomItem.type, word: randomItem.word })
         
         if (Math.random() > 0.3) {
-          lastUsed = randomImage
+          lastUsed = randomItem
         } else {
           lastUsed = null
         }
@@ -84,17 +132,17 @@ function generateGridFromPool(images: ImagePoolItem[], difficulty: Difficulty): 
     }
 
     case 'hard': {
-      let lastUsed: ImagePoolItem | null = null
+      let lastUsed: ContentPoolItem | null = null
       for (let i = 0; i < gridSize; i++) {
-        const availableImages = lastUsed 
-          ? images.filter(img => img.url !== lastUsed!.url)
-          : images
+        const availableItems = lastUsed 
+          ? items.filter(item => item.content !== lastUsed!.content)
+          : items
         
-        const pool = availableImages.length > 0 ? availableImages : images
-        const randomImage = pool[Math.floor(Math.random() * pool.length)]
+        const pool = availableItems.length > 0 ? availableItems : items
+        const randomItem = pool[Math.floor(Math.random() * pool.length)]
         
-        result.push({ content: randomImage.url, type: 'image', word: randomImage.word })
-        lastUsed = randomImage
+        result.push({ content: randomItem.content, type: randomItem.type, word: randomItem.word })
+        lastUsed = randomItem
       }
       break
     }
@@ -104,18 +152,18 @@ function generateGridFromPool(images: ImagePoolItem[], difficulty: Difficulty): 
 }
 
 function App() {
-  const [imagePool, setImagePool] = useLocalStorage<ImagePoolItem[]>('image-pool-v2', [])
+  const [contentPool, setContentPool] = useLocalStorage<ContentPoolItem[]>('content-pool-v1', [])
   const [difficulty, setDifficulty] = useLocalStorage<Difficulty>('difficulty', 'medium')
-  const [gridItems, setGridItems] = useLocalStorage<GridItem[]>('grid-items', DEFAULT_ITEMS)
+  const [gridItems, setGridItems] = useLocalStorage<GridItem[]>('grid-items', [])
   const [bpm, setBpm] = useLocalStorage<number>('bpm-value', 91)
   const [baseBpm, setBaseBpm] = useLocalStorage<number>('base-bpm', 91)
   const [customAudio, setCustomAudio] = useLocalStorage<string | null>('custom-audio', null)
   const [bpmAnalysis, setBpmAnalysis] = useLocalStorage<BpmAnalysisResult | null>('bpm-analysis', null)
-  const [rounds, setRounds] = useLocalStorage<number>('rounds', 1)
+  const [rounds, setRounds] = useLocalStorage<number>('rounds', 3)
   const [increaseSpeed, setIncreaseSpeed] = useLocalStorage<boolean>('increase-speed', false)
   const [speedIncreasePercent, setSpeedIncreasePercent] = useLocalStorage<number>('speed-increase-percent', 5)
   // Admin-only parameter: can only be set via ?admin_countdown=X.X URL parameter
-  const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 3.0)
+  const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 2.0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
@@ -124,6 +172,7 @@ function App() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [countdown, setCountdown] = useState<number | null>(null)
   const [displayBpm, setDisplayBpm] = useState<number>(91)
+  const [isFinished, setIsFinished] = useState(false)
   
   const intervalRef = useRef<number | null>(null)
   const customAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -135,18 +184,15 @@ function App() {
   const currentBpm = bpm ?? 91
   const currentBaseBpm = baseBpm ?? 91
   const currentDifficulty = difficulty ?? 'medium'
-  const currentImagePool = imagePool ?? []
-  const currentRounds = rounds ?? 1
+  const currentContentPool = contentPool ?? []
+  const currentRounds = rounds ?? 3
   const currentIncreaseSpeed = increaseSpeed ?? false
   const currentSpeedIncreasePercent = speedIncreasePercent ?? 5
   const currentCountdownDuration = countdownDuration ?? 3.0
   const currentBpmAnalysis = bpmAnalysis ?? null
   const currentGridItems = useMemo(() => {
-    if (currentImagePool.length > 0) {
-      return generateGridFromPool(currentImagePool, currentDifficulty)
-    }
-    return gridItems ?? DEFAULT_ITEMS
-  }, [currentImagePool, currentDifficulty, gridItems])
+    return generateGridFromPool(currentContentPool, currentDifficulty)
+  }, [currentContentPool, currentDifficulty])
   
   const baseBpmValue = customAudio ? currentBaseBpm : 91
   const basePlaybackSpeed = currentBpm / baseBpmValue
@@ -180,7 +226,7 @@ function App() {
         bpm: currentBpm,
         baseBpm: currentBaseBpm,
         difficulty: currentDifficulty,
-        images: currentImagePool,
+        content: currentContentPool,
         audio: customAudio,
         bpmAnalysis: currentBpmAnalysis,
         rounds: currentRounds,
@@ -224,7 +270,8 @@ function App() {
           bpm: number
           baseBpm?: number
           difficulty: Difficulty
-          images: ImagePoolItem[] | string[]
+          content?: ContentPoolItem[]
+          images?: ContentPoolItem[] | string[]
           audio: string | null
           bpmAnalysis?: BpmAnalysisResult | null
           rounds: number
@@ -253,22 +300,32 @@ function App() {
             setDifficulty(config.difficulty)
           }
           
-          // Validate and sanitize images
-          if (config.images && Array.isArray(config.images)) {
-            const validImages = config.images
-              .map(img => typeof img === 'string' ? { url: img } : img)
-              .filter(img => {
-                // Validate data URL
-                if (!isValidDataUrl(img.url)) {
+          // Validate and sanitize content (supports both new 'content' and legacy 'images' format)
+          const contentItems = config.content || config.images
+          if (contentItems && Array.isArray(contentItems)) {
+            const validItems: ContentPoolItem[] = contentItems
+              .map(item => {
+                if (typeof item === 'string') {
+                  return { content: item, type: 'image' as const }
+                }
+                // Handle legacy ImagePoolItem format
+                if ('url' in item) {
+                  return { content: item.url, type: 'image' as const, word: item.word }
+                }
+                return item as ContentPoolItem
+              })
+              .filter(item => {
+                // Validate data URL for images
+                if (item.type === 'image' && !isValidDataUrl(item.content)) {
                   console.warn('Invalid image data URL format detected in shared config')
                   return false
                 }
                 return true
               })
-              .slice(0, 8) // Limit to 8 images
+              .slice(0, 8) // Limit to 8 items
             
-            if (validImages.length > 0) {
-              setImagePool(validImages)
+            if (validItems.length > 0) {
+              setContentPool(validItems)
             }
           }
           
@@ -326,12 +383,21 @@ function App() {
             setDifficulty(decoded.difficulty)
           }
           
-          // Validate images
-          if (decoded.images && Array.isArray(decoded.images)) {
-            const validImages = decoded.images
-              .map((img: ImagePoolItem | string) => typeof img === 'string' ? { url: img } : img)
-              .filter((img: ImagePoolItem) => {
-                if (!isValidDataUrl(img.url)) {
+          // Validate content (supports both new 'content' and legacy 'images' format)
+          const contentItems = decoded.content || decoded.images
+          if (contentItems && Array.isArray(contentItems)) {
+            const validItems: ContentPoolItem[] = contentItems
+              .map((item: ContentPoolItem | { url: string; word?: string } | string) => {
+                if (typeof item === 'string') {
+                  return { content: item, type: 'image' as const }
+                }
+                if ('url' in item) {
+                  return { content: item.url, type: 'image' as const, word: item.word }
+                }
+                return item as ContentPoolItem
+              })
+              .filter((item: ContentPoolItem) => {
+                if (item.type === 'image' && !isValidDataUrl(item.content)) {
                   console.warn('Invalid image data URL format detected in config')
                   return false
                 }
@@ -339,8 +405,8 @@ function App() {
               })
               .slice(0, 8)
             
-            if (validImages.length > 0) {
-              setImagePool(validImages)
+            if (validItems.length > 0) {
+              setContentPool(validItems)
             }
           }
           
@@ -427,6 +493,21 @@ function App() {
     setIsFullscreen(true)
     setCurrentRound(1)
     
+    // Start playing music immediately with the countdown
+    const audioRef = customAudio ? customAudioRef : defaultAudioRef
+    if (audioRef.current) {
+      if (customAudio && currentBpmAnalysis && currentBpmAnalysis.silenceOffset) {
+        audioRef.current.currentTime = currentBpmAnalysis.silenceOffset
+      } else {
+        audioRef.current.currentTime = 0
+      }
+      audioRef.current.playbackRate = calculatePlaybackSpeed(1)
+      audioRef.current.play().catch((error) => {
+        console.error('Audio play error:', error)
+        toast.error('Failed to play audio')
+      })
+    }
+    
     // Calculate the interval time: total duration divided by number of countdown steps
     const countdownSteps = Math.ceil(currentCountdownDuration)
     const intervalTime = Math.round((currentCountdownDuration * 1000) / countdownSteps)
@@ -455,19 +536,6 @@ function App() {
     let roundCount = 1
     
     const audioRef = customAudio ? customAudioRef : defaultAudioRef
-    
-    if (audioRef.current) {
-      if (customAudio && currentBpmAnalysis && currentBpmAnalysis.silenceOffset) {
-        audioRef.current.currentTime = currentBpmAnalysis.silenceOffset
-      } else {
-        audioRef.current.currentTime = 0
-      }
-      audioRef.current.playbackRate = calculatePlaybackSpeed(roundCount)
-      audioRef.current.play().catch((error) => {
-        console.error('Audio play error:', error)
-        toast.error('Failed to play audio')
-      })
-    }
     
     const initialBpm = calculateRoundBpm(roundCount, 0)
     setDisplayBpm(Math.round(initialBpm))
@@ -507,13 +575,26 @@ function App() {
       
       if (index === 0 && roundCount > 1) {
         if (roundCount > currentRounds) {
-          stopBeat()
-          toast.success(`Completed ${currentRounds} round${currentRounds > 1 ? 's' : ''}!`)
+          // Stop the beat sequence but keep music playing
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current)
+            intervalRef.current = null
+          }
+          if (bpmCheckIntervalRef.current) {
+            clearInterval(bpmCheckIntervalRef.current)
+            bpmCheckIntervalRef.current = null
+          }
+          setIsPlaying(false)
+          setActiveIndex(null)
+          setIsFinished(true)
           return
         }
         
-        if (currentImagePool.length > 0) {
-          const newGrid = generateGridFromPool(currentImagePool, currentDifficulty)
+        if (currentContentPool.length > 0) {
+          const newGrid = generateGridFromPool(currentContentPool, currentDifficulty)
+          setGridItems(newGrid)
+        } else {
+          const newGrid = generateRandomEmojiGrid(currentDifficulty)
           setGridItems(newGrid)
         }
         
@@ -556,6 +637,7 @@ function App() {
     setCurrentRound(0)
     setIsFullscreen(false)
     setCountdown(null)
+    setIsFinished(false)
     setDisplayBpm(customAudio && currentBpmAnalysis ? currentBaseBpm : 91)
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
@@ -610,11 +692,9 @@ function App() {
   }, [currentBpm])
 
   useEffect(() => {
-    if (currentImagePool.length > 0) {
-      const newGrid = generateGridFromPool(currentImagePool, currentDifficulty)
-      setGridItems(newGrid)
-    }
-  }, [currentDifficulty])
+    const newGrid = generateGridFromPool(currentContentPool, currentDifficulty)
+    setGridItems(newGrid)
+  }, [currentDifficulty, currentContentPool])
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -635,6 +715,33 @@ function App() {
                 }}
               >
                 {countdown}
+              </div>
+            </div>
+          ) : isFinished ? (
+            <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8">
+              <div className="text-center space-y-8">
+                <div className="space-y-4">
+                  <h2 
+                    className="text-6xl md:text-8xl font-bold text-primary"
+                    style={{ textShadow: '0 4px 24px rgba(232, 116, 79, 0.3)' }}
+                  >
+                    🎉 Complete!
+                  </h2>
+                  <p className="text-2xl md:text-3xl font-semibold text-secondary">
+                    You finished {currentRounds} round{currentRounds > 1 ? 's' : ''}!
+                  </p>
+                </div>
+                
+                <div className="flex flex-col items-center gap-4">                  
+                  <Button
+                    size="lg"
+                    variant="default"
+                    className="h-14 px-10 text-xl font-bold"
+                    onClick={stopBeat}
+                  >
+                    Exit
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
@@ -693,52 +800,50 @@ function App() {
         </header>
 
         <div className="max-w-2xl mx-auto space-y-6 bg-card p-6 rounded-2xl border-2 border-border shadow-sm">
-          <ImagePoolManager
-            images={currentImagePool}
-            onImagesChange={(images) => setImagePool(images)}
+          <ContentPoolManager
+            items={currentContentPool}
+            onItemsChange={(items) => setContentPool(items)}
           />
           
-          {currentImagePool.length > 0 && (
-            <Card className="p-4 border-2">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-foreground">
-                    Difficulty
-                  </label>
-                  <Badge variant="outline" className="text-xs">
-                    {currentDifficulty === 'easy' && 'Same images repeat'}
-                    {currentDifficulty === 'medium' && 'Slight variance'}
-                    {currentDifficulty === 'hard' && 'All different'}
-                  </Badge>
-                </div>
-                
-                <ToggleGroup
-                  type="single"
-                  value={currentDifficulty}
-                  onValueChange={(value) => {
-                    if (value) setDifficulty(value as Difficulty)
-                  }}
-                  className="w-full"
-                >
-                  <ToggleGroupItem value="easy" className="text-sm flex-1">
-                    Easy
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="medium" className="text-sm flex-1">
-                    Medium
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="hard" className="text-sm flex-1">
-                    Hard
-                  </ToggleGroupItem>
-                </ToggleGroup>
-                
-                <p className="text-xs text-muted-foreground">
-                  {currentDifficulty === 'easy' && 'Same images appear consecutively (pairs)'}
-                  {currentDifficulty === 'medium' && 'Images mostly change with occasional repeats'}
-                  {currentDifficulty === 'hard' && 'Every image is different from the previous one'}
-                </p>
+          <Card className="p-4 border-2">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-foreground">
+                  Difficulty
+                </label>
+                <Badge variant="outline" className="text-xs">
+                  {currentDifficulty === 'easy' && 'Same items repeat'}
+                  {currentDifficulty === 'medium' && 'Slight variance'}
+                  {currentDifficulty === 'hard' && 'All different'}
+                </Badge>
               </div>
-            </Card>
-          )}
+              
+              <ToggleGroup
+                type="single"
+                value={currentDifficulty}
+                onValueChange={(value) => {
+                  if (value) setDifficulty(value as Difficulty)
+                }}
+                className="w-full"
+              >
+                <ToggleGroupItem value="easy" className="text-sm flex-1">
+                  Easy
+                </ToggleGroupItem>
+                <ToggleGroupItem value="medium" className="text-sm flex-1">
+                  Medium
+                </ToggleGroupItem>
+                <ToggleGroupItem value="hard" className="text-sm flex-1">
+                  Hard
+                </ToggleGroupItem>
+              </ToggleGroup>
+              
+              <p className="text-xs text-muted-foreground">
+                {currentDifficulty === 'easy' && 'Same items appear consecutively (pairs)'}
+                {currentDifficulty === 'medium' && 'Items mostly change with occasional repeats'}
+                {currentDifficulty === 'hard' && 'Every item is different from the previous one'}
+              </p>
+            </div>
+          </Card>
           
           <Card className="p-4 border-2">
             <div className="space-y-4">
@@ -832,7 +937,7 @@ function App() {
 
         <div className="text-center text-sm text-muted-foreground">
           <p>
-            Upload images to the pool • Choose difficulty • Cards auto-generate based on your settings
+            Add emojis or images to the pool • Choose difficulty • Cards auto-generate based on your settings
           </p>
         </div>
       </div>

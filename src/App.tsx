@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useLocalStorage, shareApi, resetAllSettings } from '@/hooks/useLocalStorage'
+import { useDebouncedSlider } from '@/hooks/useDebouncedCallback'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
@@ -208,6 +209,15 @@ function App() {
   const currentCountdownDuration = countdownDuration ?? 3.0
   const currentBpmAnalysis = bpmAnalysis ?? null
   const currentAudioStartTime = audioStartTime ?? 0
+
+  // Debounced slider values - provides smooth UI updates with delayed persistence
+  const [localRounds, setLocalRounds] = useDebouncedSlider(currentRounds, setRounds, 500)
+  const [localSpeedPercent, setLocalSpeedPercent] = useDebouncedSlider(currentSpeedIncreasePercent, setSpeedIncreasePercent, 500)
+  const [localBpm, setLocalBpm] = useDebouncedSlider(currentBpm, setBpm, 500)
+  const [localBaseBpm, setLocalBaseBpm] = useDebouncedSlider(currentBaseBpm, setBaseBpm, 500)
+  const [localStartTime, setLocalStartTime] = useDebouncedSlider(currentAudioStartTime, setAudioStartTime, 500)
+  const [localCountdown, setLocalCountdown] = useDebouncedSlider(currentCountdownDuration, setCountdownDuration, 500)
+
   // Compute a fallback grid in case gridItems is empty
   const fallbackGridItems = useMemo(() => {
     return generateGridFromPool(currentContentPool, currentDifficulty)
@@ -1030,12 +1040,12 @@ function App() {
                   Rounds
                 </label>
                 <Badge variant="secondary" className="text-sm font-bold">
-                  {currentRounds}
+                  {localRounds}
                 </Badge>
               </div>
               <Slider
-                value={[currentRounds]}
-                onValueChange={([value]) => setRounds(value)}
+                value={[localRounds]}
+                onValueChange={([value]) => setLocalRounds(value)}
                 min={1}
                 max={10}
                 step={1}
@@ -1111,12 +1121,12 @@ function App() {
                       Speed increase per round
                     </label>
                     <Badge variant="secondary" className="text-sm font-bold">
-                      {currentSpeedIncreasePercent}%
+                      {localSpeedPercent}%
                     </Badge>
                   </div>
                   <Slider
-                    value={[currentSpeedIncreasePercent]}
-                    onValueChange={([value]) => setSpeedIncreasePercent(value)}
+                    value={[localSpeedPercent]}
+                    onValueChange={([value]) => setLocalSpeedPercent(value)}
                     min={1}
                     max={10}
                     step={1}
@@ -1124,7 +1134,7 @@ function App() {
                     disabled={isPlaying}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Each round increases by {currentSpeedIncreasePercent}% (1-10%)
+                    Each round increases by {localSpeedPercent}% (1-10%)
                   </p>
                 </div>
               )}
@@ -1149,14 +1159,14 @@ function App() {
               setBpm(91)
               setAudioStartTime(0)
             }}
-            bpm={currentBpm}
-            onBpmChange={(value) => setBpm(value)}
-            baseBpm={currentBaseBpm}
-            onBaseBpmChange={(value) => setBaseBpm(value)}
-            startTime={currentAudioStartTime}
-            onStartTimeChange={(value) => setAudioStartTime(value)}
-            countdownDuration={currentCountdownDuration}
-            onCountdownDurationChange={(value) => setCountdownDuration(value)}
+            bpm={localBpm}
+            onBpmChange={(value) => setLocalBpm(value)}
+            baseBpm={localBaseBpm}
+            onBaseBpmChange={(value) => setLocalBaseBpm(value)}
+            startTime={localStartTime}
+            onStartTimeChange={(value) => setLocalStartTime(value)}
+            countdownDuration={localCountdown}
+            onCountdownDurationChange={(value) => setLocalCountdown(value)}
             isPlaying={isPlaying}
           />
           </div>

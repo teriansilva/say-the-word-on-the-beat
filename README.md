@@ -159,7 +159,3 @@ The Spark Template files and resources from GitHub are licensed under the terms 
 ## 🎉 Acknowledgments
 
 Inspired by the viral "Say the Word on Beat" social media challenge that brings rhythm and joy to picture grids!
-
----
-
-Built with ❤️ using [GitHub Spark](https://githubnext.com/projects/spark)

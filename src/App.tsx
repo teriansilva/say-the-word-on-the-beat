@@ -211,6 +211,26 @@ function App() {
   const currentGridItems = useMemo(() => {
     return generateGridFromPool(currentContentPool, currentDifficulty)
   }, [currentContentPool, currentDifficulty])
+
+  // Check if user has customized anything from defaults
+  const hasCustomizations = useMemo(() => {
+    // Check if content pool differs from default
+    const defaultContentStrings = DEFAULT_CONTENT_POOL.map(item => item.content).sort()
+    const currentContentStrings = currentContentPool.map(item => item.content).sort()
+    const contentPoolChanged = 
+      currentContentPool.length !== DEFAULT_CONTENT_POOL.length ||
+      currentContentStrings.some((content, i) => content !== defaultContentStrings[i]) ||
+      currentContentPool.some(item => item.type === 'image') // Any images means customized
+
+    // Check other settings
+    const hasCustomAudio = customAudio !== null
+    const difficultyChanged = currentDifficulty !== 'medium'
+    const bpmChanged = currentBpm !== 91
+    const roundsChanged = currentRounds !== 3
+    const speedSettingsChanged = currentIncreaseSpeed !== false
+
+    return contentPoolChanged || hasCustomAudio || difficultyChanged || bpmChanged || roundsChanged || speedSettingsChanged
+  }, [currentContentPool, customAudio, currentDifficulty, currentBpm, currentRounds, currentIncreaseSpeed])
   
   const baseBpmValue = customAudio ? currentBaseBpm : 91
   const basePlaybackSpeed = currentBpm / baseBpmValue
@@ -1184,7 +1204,13 @@ function App() {
         <FloatingMenu
           isPlaying={isPlaying}
           onPlayPause={handlePlayPause}
-          onShareClick={() => setShareModalOpen(true)}
+          onShareClick={() => {
+            if (!hasCustomizations) {
+              toast.error('Customize your game first before sharing!')
+              return
+            }
+            setShareModalOpen(true)
+          }}
           onResetClick={async () => {
             await resetAllSettings()
             toast.success('Game reset! Reloading...')

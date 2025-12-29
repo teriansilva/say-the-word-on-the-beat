@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import { Upload, Waveform, X, Spinner, ArrowCounterClockwise, Clock, Timer } from '@phosphor-icons/react'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { analyzeBpm, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
 import { validateAudioFile } from '@/lib/security'
@@ -35,6 +35,33 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
   const fileInputRef = useRef<HTMLInputElement>(null)
   const audioPreviewRef = useRef<HTMLAudioElement>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [audioDuration, setAudioDuration] = useState<number>(300)
+
+  // Update audio duration when audio URL changes
+  useEffect(() => {
+    if (!audioUrl) {
+      setAudioDuration(300)
+      return
+    }
+
+    const audio = new Audio()
+    audio.src = audioUrl
+    
+    const handleLoadedMetadata = () => {
+      const duration = Math.floor(audio.duration)
+      setAudioDuration(duration)
+      // If current start time exceeds new duration, reset it
+      if (startTime > duration) {
+        onStartTimeChange(0)
+      }
+    }
+    
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+    
+    return () => {
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+    }
+  }, [audioUrl])
 
   const handleReset = () => {
     const resetBpm = audioUrl ? baseBpm : 91
@@ -177,7 +204,7 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
                 value={[startTime]}
                 onValueChange={([value]) => onStartTimeChange(value)}
                 min={0}
-                max={300}
+                max={audioDuration}
                 step={1}
                 className="flex-1"
                 disabled={isPlaying}
@@ -186,17 +213,17 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
                 type="number"
                 value={startTime}
                 onChange={(e) => {
-                  const value = Math.max(0, Math.min(300, parseInt(e.target.value) || 0))
+                  const value = Math.max(0, Math.min(audioDuration, parseInt(e.target.value) || 0))
                   onStartTimeChange(value)
                 }}
                 className="w-20 h-8 text-center text-sm"
                 min={0}
-                max={300}
+                max={audioDuration}
                 disabled={isPlaying}
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Set where in the audio to start playback (0-300 seconds)
+              Set where in the audio to start playback (0-{formatTime(audioDuration)})
             </p>
           </div>
         )}

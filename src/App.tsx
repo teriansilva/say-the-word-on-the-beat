@@ -208,9 +208,13 @@ function App() {
   const currentCountdownDuration = countdownDuration ?? 3.0
   const currentBpmAnalysis = bpmAnalysis ?? null
   const currentAudioStartTime = audioStartTime ?? 0
-  const currentGridItems = useMemo(() => {
+  // Compute a fallback grid in case gridItems is empty
+  const fallbackGridItems = useMemo(() => {
     return generateGridFromPool(currentContentPool, currentDifficulty)
   }, [currentContentPool, currentDifficulty])
+  
+  // Use persisted gridItems if available, otherwise use fallback
+  const displayedGridItems = (gridItems && gridItems.length > 0) ? gridItems : fallbackGridItems
 
   // Check if user has customized anything from defaults
   const hasCustomizations = useMemo(() => {
@@ -706,8 +710,11 @@ function App() {
       return (60 / roundBpm) * 1000
     }
     
+    // Track the current grid size
+    let currentGridSize = displayedGridItems.length
+    
     const playSequence = () => {
-      index = (index + 1) % currentGridItems.length
+      index = (index + 1) % currentGridSize
       
       if (index === 0 && roundCount > 1) {
         if (roundCount > currentRounds) {
@@ -731,13 +738,10 @@ function App() {
           return
         }
         
-        if (currentContentPool.length > 0) {
-          const newGrid = generateGridFromPool(currentContentPool, currentDifficulty)
-          setGridItems(newGrid)
-        } else {
-          const newGrid = generateRandomEmojiGrid(currentDifficulty)
-          setGridItems(newGrid)
-        }
+        // Always generate a fresh grid for each new round (mix it up!)
+        const newGrid = generateGridFromPool(currentContentPool, currentDifficulty)
+        setGridItems(newGrid)
+        currentGridSize = newGrid.length
         
         setRevealedIndices(new Set())
         setCurrentRound(roundCount)
@@ -757,7 +761,7 @@ function App() {
         }
       }
       
-      if (index === currentGridItems.length - 1) {
+      if (index === currentGridSize - 1) {
         roundCount++
       }
       
@@ -969,7 +973,7 @@ function App() {
               <div 
                 className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 lg:gap-8 max-w-6xl w-full flex-shrink-0"
               >
-                {currentGridItems.map((item, index) => (
+                {displayedGridItems.map((item, index) => (
                   <GridCard
                     key={index}
                     content={item.content}

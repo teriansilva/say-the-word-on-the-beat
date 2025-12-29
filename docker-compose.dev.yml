@@ -32,8 +32,10 @@ services:
       - MONGODB_URI=mongodb://mongo:27017/saytheword
       - CORS_ORIGIN=http://localhost:8091
       - DEBUG=express:*
+      - STALE_DAYS=7  # Days before unused games are cleaned up
     volumes:
       - ./server/src:/app/src:ro  # Mount source for easier debugging (read-only)
+      - api-logs:/var/log  # Persist cleanup logs
     depends_on:
       - mongo
     networks:
@@ -49,10 +51,30 @@ services:
       - "27847:27017"  # Expose MongoDB for direct access/debugging
     volumes:
       - mongo-data:/data/db
+      - mongo-config:/data/configdb
     networks:
       - app-network
     labels:
       - "com.say-the-word-on-beat.description=MongoDB Database"
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: say-the-word-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8092:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_USER:-admin}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${MONGO_EXPRESS_PASS:-changeme123}
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+    depends_on:
+      - mongo
+    networks:
+      - app-network
+    labels:
+      - "com.say-the-word-on-beat.description=MongoDB Admin Interface"
 
 networks:
   app-network:
@@ -60,4 +82,8 @@ networks:
 
 volumes:
   mongo-data:
+    driver: local
+  mongo-config:
+    driver: local
+  api-logs:
     driver: local

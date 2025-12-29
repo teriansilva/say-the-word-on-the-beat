@@ -13,7 +13,7 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost/health"]
       interval: 30s
       timeout: 3s
       start_period: 30s
@@ -36,7 +36,10 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - MONGODB_URI=mongodb://mongo:27017/saytheword
-      - CORS_ORIGIN=http://localhost:8091
+      - CORS_ORIGIN=https://saywordsonbeat.com
+      - STALE_DAYS=7  # Days before unused games are cleaned up
+    volumes:
+      - api-logs:/var/log  # Persist cleanup logs
     depends_on:
       mongo:
         condition: service_healthy
@@ -57,6 +60,7 @@ services:
     restart: always
     volumes:
       - mongo-data:/data/db
+      - mongo-config:/data/configdb
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 30s
@@ -68,10 +72,34 @@ services:
     labels:
       - "com.say-the-word-on-beat.description=MongoDB Database"
 
+  mongo-express:
+    image: mongo-express:latest
+    container_name: say-the-word-mongo-express
+    restart: always
+    ports:
+      - "8092:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_USER:-admin}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${MONGO_EXPRESS_PASS:-changeme123}
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - app-network
+    labels:
+      - "com.say-the-word-on-beat.description=MongoDB Admin Interface"
+
 networks:
   app-network:
     driver: bridge
 
 volumes:
   mongo-data:
+    driver: local
+  mongo-config:
+    driver: local
+  api-logs:
     driver: local

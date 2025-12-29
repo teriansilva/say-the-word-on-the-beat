@@ -21,6 +21,9 @@ RUN npm run build
 # Stage 2: Serve the application with Nginx
 FROM nginx:alpine AS production
 
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
@@ -32,7 +35,7 @@ EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+  CMD curl -sf http://localhost/health || exit 1
 
 # Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

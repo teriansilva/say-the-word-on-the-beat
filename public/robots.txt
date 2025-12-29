@@ -1,0 +1,17 @@
+# robots.txt for Say the Word on Beat
+# https://saywordsonbeat.com
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://saywordsonbeat.com/sitemap.xml
+
+# Crawl-delay (optional, be nice to crawlers)
+Crawl-delay: 1
+
+# Disallow API routes
+Disallow: /api/
+
+# Allow all other content
+Allow: /

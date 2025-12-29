@@ -5,6 +5,23 @@ const API_BASE = '/api'
 // Keys that should NOT be stored in localStorage (too large)
 const SKIP_LOCAL_STORAGE_KEYS = ['custom-audio', 'image-pool-v2']
 
+// All setting keys used by the app (for reset functionality)
+export const ALL_SETTING_KEYS = [
+  'content-pool-v1',
+  'difficulty',
+  'grid-items',
+  'bpm-value',
+  'base-bpm',
+  'custom-audio',
+  'bpm-analysis',
+  'audio-start-time',
+  'rounds',
+  'increase-speed',
+  'speed-increase-percent',
+  'countdown-duration',
+  'image-pool-v2' // Legacy key
+]
+
 // Session management
 let sessionPromise: Promise<void> | null = null
 
@@ -128,6 +145,30 @@ export function useLocalStorage<T>(
   }, [key, skipLocalStorage])
 
   return [value, updateValue]
+}
+
+/**
+ * Reset all game settings to defaults
+ */
+export async function resetAllSettings(): Promise<void> {
+  // Clear localStorage
+  for (const key of ALL_SETTING_KEYS) {
+    localStorage.removeItem(key)
+  }
+  
+  // Clear from API
+  try {
+    await ensureSession()
+    
+    for (const key of ALL_SETTING_KEYS) {
+      await fetch(`${API_BASE}/settings/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      }).catch(() => {})
+    }
+  } catch (err) {
+    console.debug('Failed to clear settings from API:', err)
+  }
 }
 
 /**

@@ -2,7 +2,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
-import { Upload, Waveform, X, ArrowSquareOut, Spinner, ArrowCounterClockwise } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
+import { Upload, Waveform, X, Spinner, ArrowCounterClockwise, Clock, Timer } from '@phosphor-icons/react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { analyzeBpm, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
@@ -16,11 +17,23 @@ interface AudioUploaderProps {
   onBpmChange: (bpm: number) => void
   baseBpm: number
   onBaseBpmChange: (baseBpm: number) => void
+  startTime: number
+  onStartTimeChange: (startTime: number) => void
+  countdownDuration: number
+  onCountdownDurationChange: (duration: number) => void
   isPlaying: boolean
 }
 
-export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onBpmChange, baseBpm, onBaseBpmChange, isPlaying }: AudioUploaderProps) {
+// Helper to format seconds as MM:SS
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onBpmChange, baseBpm, onBaseBpmChange, startTime, onStartTimeChange, countdownDuration, onCountdownDurationChange, isPlaying }: AudioUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const audioPreviewRef = useRef<HTMLAudioElement>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   const handleReset = () => {
@@ -142,6 +155,76 @@ export function AudioUploader({ audioUrl, onAudioUpload, onAudioRemove, bpm, onB
             </div>
             <p className="text-xs text-muted-foreground">
               Automatically detected base tempo for this audio file
+            </p>
+          </div>
+        )}
+
+        {audioUrl && (
+          <div className="pt-3 border-t border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock size={16} weight="bold" className="text-muted-foreground" />
+                <label className="text-sm font-semibold text-foreground">
+                  Start Time
+                </label>
+              </div>
+              <Badge variant="secondary" className="text-sm font-bold">
+                {formatTime(startTime)}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Slider
+                value={[startTime]}
+                onValueChange={([value]) => onStartTimeChange(value)}
+                min={0}
+                max={300}
+                step={1}
+                className="flex-1"
+                disabled={isPlaying}
+              />
+              <Input
+                type="number"
+                value={startTime}
+                onChange={(e) => {
+                  const value = Math.max(0, Math.min(300, parseInt(e.target.value) || 0))
+                  onStartTimeChange(value)
+                }}
+                className="w-20 h-8 text-center text-sm"
+                min={0}
+                max={300}
+                disabled={isPlaying}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Set where in the audio to start playback (0-300 seconds)
+            </p>
+          </div>
+        )}
+
+        {audioUrl && (
+          <div className="pt-3 border-t border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Timer size={16} weight="bold" className="text-muted-foreground" />
+                <label className="text-sm font-semibold text-foreground">
+                  Countdown
+                </label>
+              </div>
+              <Badge variant="secondary" className="text-sm font-bold">
+                {countdownDuration}s
+              </Badge>
+            </div>
+            <Slider
+              value={[countdownDuration]}
+              onValueChange={([value]) => onCountdownDurationChange(value)}
+              min={1}
+              max={5}
+              step={0.5}
+              className="w-full"
+              disabled={isPlaying}
+            />
+            <p className="text-xs text-muted-foreground">
+              Duration of the countdown before cards start (1-5 seconds)
             </p>
           </div>
         )}

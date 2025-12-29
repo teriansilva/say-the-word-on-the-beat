@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Upload, X, Plus, Pencil, Smiley, ImageSquare } from '@phosphor-icons/react'
+import { Upload, X, Plus, Pencil, Smiley, ImageSquare, Trash } from '@phosphor-icons/react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { validateImageFile, sanitizeText } from '@/lib/security'
@@ -144,41 +144,41 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
           </p>
 
           {items.length > 0 && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-4 gap-2">
               {items.map((item, index) => (
-                <div key={index} className="space-y-2">
+                <div key={index} className="space-y-1">
                   <div className="relative aspect-square">
                     {item.type === 'emoji' ? (
-                      <div className="w-full h-full flex items-center justify-center bg-muted rounded-lg border-2 border-border">
-                        <span className="text-5xl select-none">{item.content}</span>
+                      <div className="w-full h-full flex items-center justify-center bg-muted rounded-md border-2 border-border">
+                        <span className="text-3xl select-none">{item.content}</span>
                       </div>
                     ) : (
                       <img
                         src={item.content}
                         alt={`Pool item ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg border-2 border-border"
+                        className="w-full h-full object-cover rounded-md border-2 border-border"
                       />
                     )}
                     <button
                       onClick={() => handleRemoveItem(index)}
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:scale-110 active:scale-95 shadow-md z-10"
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:scale-110 active:scale-95 shadow-md z-10"
                     >
-                      <X size={14} weight="bold" />
+                      <X size={12} weight="bold" />
                     </button>
                     {item.word && (
-                      <div className="absolute bottom-2 left-2 right-2 bg-black/75 text-white text-xs font-bold py-1 px-2 rounded text-center">
+                      <div className="absolute bottom-1 left-1 right-1 bg-black/75 text-white text-[10px] font-bold py-0.5 px-1 rounded text-center truncate">
                         {item.word}
                       </div>
                     )}
                   </div>
                   
                   {editingIndex === index ? (
-                    <div className="flex gap-1">
+                    <div className="flex gap-0.5">
                       <Input
                         value={editingWord}
                         onChange={(e) => setEditingWord(e.target.value)}
-                        placeholder="Word (optional)"
-                        className="text-xs h-7"
+                        placeholder="Word"
+                        className="text-[10px] h-5 px-1"
                         maxLength={20}
                         autoFocus
                         onKeyDown={(e) => {
@@ -193,9 +193,9 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
                       <Button
                         size="sm"
                         onClick={() => handleSaveWord(index)}
-                        className="h-7 px-2"
+                        className="h-5 px-1 text-[10px]"
                       >
-                        Save
+                        ✓
                       </Button>
                     </div>
                   ) : (
@@ -203,10 +203,10 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
                       size="sm"
                       variant="outline"
                       onClick={() => handleEditWord(index)}
-                      className="w-full h-7 text-xs gap-1"
+                      className="w-full h-5 text-[10px] gap-0.5 px-1"
                     >
-                      <Pencil size={12} weight="bold" />
-                      {item.word ? 'Edit Word' : 'Add Word'}
+                      <Pencil size={10} weight="bold" />
+                      {item.word ? 'Edit' : 'Word'}
                     </Button>
                   )}
                 </div>
@@ -214,16 +214,38 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
             </div>
           )}
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setIsPickerOpen(true)}
-            className="w-full gap-2"
-            disabled={items.length >= 8}
-          >
-            <Plus size={16} weight="bold" />
-            {items.length === 0 ? 'Add Emoji or Image' : `Add More (${8 - items.length} slots)`}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsPickerOpen(true)}
+              className="flex-1 gap-2"
+              disabled={items.length >= 8}
+            >
+              <Plus size={16} weight="bold" />
+              {items.length === 0 ? 'Add Emoji or Image' : `Add More (${8 - items.length} slots)`}
+            </Button>
+            {items.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  onItemsChange([])
+                  toast.success('All items removed')
+                }}
+                className="gap-1 text-destructive hover:text-destructive"
+              >
+                <Trash size={16} weight="bold" />
+                Clear
+              </Button>
+            )}
+          </div>
+          
+          {items.length === 0 && (
+            <p className="text-xs text-muted-foreground italic text-center">
+              🎲 With no content, random emojis will be used!
+            </p>
+          )}
         </div>
       </Card>
 
@@ -258,7 +280,7 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
                           <button
                             key={`${emoji}-${i}`}
                             onClick={() => handleAddEmoji(emoji)}
-                            className="aspect-square flex items-center justify-center text-2xl hover:bg-accent rounded-lg transition-colors cursor-pointer border-2 border-transparent hover:border-primary"
+                            className="aspect-square flex items-center justify-center text-3xl hover:bg-accent rounded-lg transition-colors cursor-pointer border-2 border-transparent hover:border-primary bg-muted/50"
                           >
                             {emoji}
                           </button>

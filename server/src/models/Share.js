@@ -25,11 +25,44 @@ const shareSchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date
+  },
+  // Social features
+  isPublic: {
+    type: Boolean,
+    default: false
+  },
+  title: {
+    type: String,
+    maxlength: 100,
+    default: ''
+  },
+  likes: {
+    type: Number,
+    default: 0
+  },
+  likedBy: [{
+    type: String // Session IDs that have liked this share
+  }],
+  // Preview data for quick display (computed from config on save)
+  preview: {
+    contentItems: [{
+      content: String,
+      type: {
+        type: String,
+        enum: ['emoji', 'image']
+      }
+    }],
+    rounds: Number,
+    bpm: Number,
+    hasCustomAudio: Boolean,
+    difficulty: String
   }
 });
 
 // TTL index for automatic expiration
 shareSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 shareSchema.index({ guid: 1 }, { unique: true });
+// Index for public shares sorted by likes
+shareSchema.index({ isPublic: 1, likes: -1, createdAt: -1 });
 
 module.exports = mongoose.model('Share', shareSchema);

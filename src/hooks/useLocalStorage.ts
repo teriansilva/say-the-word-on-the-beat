@@ -171,18 +171,51 @@ export async function resetAllSettings(): Promise<void> {
   }
 }
 
+// Types for public shares
+export interface PublicSharePreview {
+  contentItems: Array<{ content: string; type: 'emoji' | 'image' }>
+  rounds: number
+  bpm: number
+  hasCustomAudio: boolean
+  difficulty: string
+}
+
+export interface PublicShare {
+  guid: string
+  title: string
+  likes: number
+  preview: PublicSharePreview
+  createdAt: string
+  hasLiked: boolean
+}
+
+export interface PublicSharesResponse {
+  shares: PublicShare[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+    hasMore: boolean
+  }
+}
+
 /**
  * API client for share functionality
  */
 export const shareApi = {
-  async create(config: Record<string, unknown>): Promise<string> {
+  async create(config: Record<string, unknown>, options?: { isPublic?: boolean; title?: string }): Promise<string> {
     await ensureSession()
     
     const response = await fetch(`${API_BASE}/shares`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ config })
+      body: JSON.stringify({ 
+        config,
+        isPublic: options?.isPublic || false,
+        title: options?.title || ''
+      })
     })
     
     if (!response.ok) {
@@ -208,6 +241,36 @@ export const shareApi = {
     } catch {
       return null
     }
+  },
+
+  async getPublic(page: number = 1, limit: number = 20): Promise<PublicSharesResponse> {
+    await ensureSession()
+    
+    const response = await fetch(
+      `${API_BASE}/shares/public?page=${page}&limit=${limit}`,
+      { credentials: 'include' }
+    )
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch public shares')
+    }
+    
+    return response.json()
+  },
+
+  async toggleLike(guid: string): Promise<{ likes: number; hasLiked: boolean }> {
+    await ensureSession()
+    
+    const response = await fetch(`${API_BASE}/shares/${guid}/like`, {
+      method: 'POST',
+      credentials: 'include'
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to toggle like')
+    }
+    
+    return response.json()
   }
 }
 

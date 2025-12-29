@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useLocalStorage, shareApi, resetAllSettings } from '@/hooks/useLocalStorage'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { getBpmAtTime, type BpmAnalysisResult } from '@/lib/bpmAnalyzer'
 import { FloatingMenu } from '@/components/FloatingMenu'
+import { PublicGamesPanel } from '@/components/PublicGamesPanel'
 import defaultAudio from '@/assets/audio/audio.mp3'
 import completeSound from '@/assets/audio/cheer.mp3'
 import { 
@@ -178,7 +179,7 @@ function App() {
   const [increaseSpeed, setIncreaseSpeed] = useLocalStorage<boolean>('increase-speed', false)
   const [speedIncreasePercent, setSpeedIncreasePercent] = useLocalStorage<number>('speed-increase-percent', 5)
   // Admin-only parameter: can only be set via ?admin_countdown=X.X URL parameter
-  const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 3.0)
+  const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 2)
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
@@ -237,7 +238,7 @@ function App() {
   
   const activeAudioUrl = customAudio || defaultAudio
 
-  const generateShareLink = async (): Promise<string> => {
+  const generateShareLink = async (options: { isPublic: boolean; title: string }): Promise<string> => {
     try {
       const config = {
         bpm: currentBpm,
@@ -253,7 +254,10 @@ function App() {
         // Note: countdownDuration is excluded - this is an admin-only parameter
       }
       
-      const guid = await shareApi.create(config)
+      const guid = await shareApi.create(config, { 
+        isPublic: options.isPublic, 
+        title: options.title 
+      })
       
       const url = new URL(window.location.href)
       url.searchParams.delete('config')
@@ -497,7 +501,101 @@ function App() {
     }
   }
 
-
+  const loadPublicGame = useCallback(async (guid: string) => {
+    try {
+      const config = await shareApi.get(guid) as {
+        bpm: number
+        baseBpm?: number
+        difficulty: Difficulty
+        content?: ContentPoolItem[]
+        images?: ContentPoolItem[] | string[]
+        audio: string | null
+        bpmAnalysis?: BpmAnalysisResult | null
+        rounds: number
+        increaseSpeed?: boolean
+        speedIncreasePercent?: number
+      } | null
+      
+      if (!config) {
+        throw new Error('Game not found')
+      }
+      
+      // Apply config (similar to loadFromUrl)
+      if (config.bpm) {
+        const bpmValidation = validateNumber(config.bpm, 60, 180, 'BPM')
+        if (bpmValidation.valid) {
+          setBpm(config.bpm)
+        }
+      }
+      
+      if (config.baseBpm) {
+        const baseBpmValidation = validateNumber(config.baseBpm, 60, 180, 'Base BPM')
+        if (baseBpmValidation.valid) {
+          setBaseBpm(config.baseBpm)
+        }
+      }
+      
+      if (config.difficulty && validateDifficulty(config.difficulty)) {
+        setDifficulty(config.difficulty)
+      }
+      
+      const contentItems = config.content || config.images
+      if (contentItems && Array.isArray(contentItems)) {
+        const validItems: ContentPoolItem[] = contentItems
+          .map(item => {
+            if (typeof item === 'string') {
+              return { content: item, type: 'image' as const }
+            }
+            if ('url' in item) {
+              return { content: item.url, type: 'image' as const, word: item.word }
+            }
+            return item as ContentPoolItem
+          })
+          .filter(item => {
+            if (item.type === 'image' && !isValidDataUrl(item.content)) {
+              return false
+            }
+            return true
+          })
+          .slice(0, 8)
+        
+        if (validItems.length > 0) {
+          setContentPool(validItems)
+        }
+      }
+      
+      if (config.audio && isValidDataUrl(config.audio)) {
+        setCustomAudio(config.audio)
+      } else {
+        setCustomAudio(null)
+      }
+      
+      if (config.bpmAnalysis) setBpmAnalysis(config.bpmAnalysis)
+      
+      if (config.rounds) {
+        const roundsValidation = validateNumber(config.rounds, 1, 10, 'Rounds')
+        if (roundsValidation.valid) {
+          setRounds(config.rounds)
+        }
+      }
+      
+      if (config.increaseSpeed !== undefined) setIncreaseSpeed(config.increaseSpeed)
+      
+      if (config.speedIncreasePercent !== undefined) {
+        const speedValidation = validateNumber(config.speedIncreasePercent, 0, 100, 'Speed increase')
+        if (speedValidation.valid) {
+          setSpeedIncreasePercent(config.speedIncreasePercent)
+        }
+      }
+      
+      // Scroll to top smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      
+    } catch (error) {
+      console.error('Failed to load public game:', error)
+      throw error
+    }
+  }, [setBpm, setBaseBpm, setDifficulty, setContentPool, setCustomAudio, setBpmAnalysis, setRounds, setIncreaseSpeed, setSpeedIncreasePercent])
 
   const startBeat = () => {
     if (isPlaying) return
@@ -526,11 +624,10 @@ function App() {
       })
     }
     
-    // Calculate the interval time: total duration divided by number of countdown steps
-    const countdownSteps = Math.ceil(currentCountdownDuration)
-    const intervalTime = Math.round((currentCountdownDuration * 1000) / countdownSteps)
+    // Calculate the interval time: total duration divided by 3 countdown steps (always 3, 2, 1)
+    const intervalTime = Math.round((currentCountdownDuration * 1000) / 3)
     
-    setCountdown(countdownSteps)
+    setCountdown(3)
     
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
@@ -878,7 +975,7 @@ function App() {
         </div>
       )}
       
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         <header className="text-center space-y-2 py-4">
           <h1 className="text-5xl md:text-7xl font-bold text-primary tracking-tight" style={{ 
             textShadow: '0 2px 0 rgba(232, 116, 79, 0.2), 0 4px 12px rgba(232, 116, 79, 0.15)'
@@ -892,11 +989,14 @@ function App() {
           </p>
         </header>
 
-        <div className="max-w-2xl mx-auto space-y-6 bg-card p-6 rounded-2xl border-2 border-border shadow-sm">
-          <ContentPoolManager
-            items={currentContentPool}
-            onItemsChange={(items) => setContentPool(items)}
-          />
+        {/* Two-column layout: Game Settings + Community Games */}
+        <div className="flex flex-col xl:flex-row gap-6">
+          {/* Main Settings Column */}
+          <div className="flex-1 min-w-0 space-y-6 bg-card p-6 rounded-2xl border-2 border-border shadow-sm">
+            <ContentPoolManager
+              items={currentContentPool}
+              onItemsChange={(items) => setContentPool(items)}
+            />
           
           <Card className="p-4 border-2">
             <div className="space-y-3">
@@ -1034,6 +1134,17 @@ function App() {
             onCountdownDurationChange={(value) => setCountdownDuration(value)}
             isPlaying={isPlaying}
           />
+          </div>
+          
+          {/* Community Games Column */}
+          <div className="hidden xl:block w-[360px] shrink-0 h-[calc(100vh-280px)] sticky top-8">
+            <PublicGamesPanel onLoadGame={loadPublicGame} />
+          </div>
+        </div>
+        
+        {/* Mobile Community Games (shown below settings on mobile) */}
+        <div className="xl:hidden">
+          <PublicGamesPanel onLoadGame={loadPublicGame} />
         </div>
 
         <div className="text-center text-sm text-muted-foreground space-y-2">

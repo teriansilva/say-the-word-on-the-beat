@@ -9,6 +9,7 @@ import { Upload, X, Plus, Pencil, Smiley, ImageSquare, Trash } from '@phosphor-i
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { validateImageFile, sanitizeText } from '@/lib/security'
+import { ImageCropper } from '@/components/ImageCropper'
 
 export interface ContentPoolItem {
   content: string
@@ -35,6 +36,12 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingWord, setEditingWord] = useState('')
   const [isPickerOpen, setIsPickerOpen] = useState(false)
+  
+  // Cropping state
+  const [cropperOpen, setCropperOpen] = useState(false)
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+  const [pendingImages, setPendingImages] = useState<string[]>([])
+  const [currentCropIndex, setCurrentCropIndex] = useState(0)
 
   const handleAddEmoji = (emoji: string) => {
     if (items.length >= 8) {
@@ -72,32 +79,72 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
 
     if (validFiles.length === 0) return
 
-    let processedCount = 0
-    const newItems: ContentPoolItem[] = []
-
-    validFiles.forEach(file => {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string
-        newItems.push({ content: dataUrl, type: 'image' })
-        processedCount++
-
-        if (processedCount === validFiles.length) {
-          onItemsChange([...items, ...newItems])
-          toast.success(`${validFiles.length} image${validFiles.length === 1 ? '' : 's'} uploaded!`)
+    // Read all files and queue them for cropping
+    const readPromises = validFiles.map(file => {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          resolve(event.target?.result as string)
         }
-      }
-      reader.onerror = () => {
-        processedCount++
-        toast.error(`Failed to read ${file.name}`)
-      }
-      reader.readAsDataURL(file)
+        reader.onerror = () => {
+          reject(new Error(`Failed to read ${file.name}`))
+        }
+        reader.readAsDataURL(file)
+      })
     })
+
+    try {
+      const imageDataUrls = await Promise.all(readPromises)
+      // Queue images for cropping
+      setPendingImages(imageDataUrls)
+      setCurrentCropIndex(0)
+      setImageToCrop(imageDataUrls[0])
+      setCropperOpen(true)
+      setIsPickerOpen(false)
+    } catch (error) {
+      toast.error('Failed to read some images')
+    }
 
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-    setIsPickerOpen(false)
+  }
+
+  const handleCropComplete = (croppedImageDataUrl: string) => {
+    // Add the cropped image to items
+    onItemsChange([...items, { content: croppedImageDataUrl, type: 'image' }])
+    
+    // Move to next image or finish
+    const nextIndex = currentCropIndex + 1
+    if (nextIndex < pendingImages.length) {
+      setCurrentCropIndex(nextIndex)
+      setImageToCrop(pendingImages[nextIndex])
+      // Keep cropper open for next image
+    } else {
+      // All images processed
+      setCropperOpen(false)
+      setImageToCrop(null)
+      setPendingImages([])
+      setCurrentCropIndex(0)
+      toast.success(`${pendingImages.length} image${pendingImages.length === 1 ? '' : 's'} added!`)
+    }
+  }
+
+  const handleCropCancel = () => {
+    // Skip current image and move to next, or close if last
+    const nextIndex = currentCropIndex + 1
+    if (nextIndex < pendingImages.length) {
+      setCurrentCropIndex(nextIndex)
+      setImageToCrop(pendingImages[nextIndex])
+    } else {
+      setCropperOpen(false)
+      setImageToCrop(null)
+      setPendingImages([])
+      setCurrentCropIndex(0)
+      if (currentCropIndex > 0) {
+        toast.success('Images added!')
+      }
+    }
   }
 
   const handleRemoveItem = (index: number) => {
@@ -322,6 +369,29 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
           />
         </DialogContent>
       </Dialog>
+
+      {imageToCrop && (
+        <ImageCropper
+          open={cropperOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              handleCropCancel()
+            }
+          }}
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+        />
+      )}
+      
+      {/* Show progress when cropping multiple images */}
+      {cropperOpen && pendingImages.length > 1 && (
+        <div className="fixed bottom-4 right-4 z-[200] bg-background/95 backdrop-blur border-2 border-border rounded-lg px-4 py-2 shadow-lg">
+          <p className="text-sm font-medium">
+            Image {currentCropIndex + 1} of {pendingImages.length}
+          </p>
+        </div>
+      )}
     </>
   )
 }

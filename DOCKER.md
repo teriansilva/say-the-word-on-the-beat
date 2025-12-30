@@ -32,7 +32,11 @@ docker-compose -f docker-compose.dev.yml up -d --build
 ### Production Mode
 
 ```bash
-docker-compose -f docker-compose.prod.yml up -d --build
+# Using npm script (recommended)
+npm run docker:prod
+
+# Or directly with docker-compose
+docker-compose -f docker-compose.prod.yml up -d --build --force-recreate
 ```
 
 **Features:**
@@ -47,6 +51,15 @@ docker-compose -f docker-compose.prod.yml up -d --build
 ```bash
 docker-compose up -d --build
 ```
+
+## NPM Scripts for Docker
+
+| Script | Command |
+|--------|---------|
+| `npm run docker:dev` | Start development with rebuild |
+| `npm run docker:prod` | Start production with rebuild |
+| `npm run docker:down` | Stop all containers |
+| `npm run docker:logs` | Follow container logs |
 
 ## Accessing the Application
 
@@ -68,7 +81,10 @@ docker-compose up -d --build
 ## Stop the Application
 
 ```bash
-# Stop containers (keeps data)
+# Using npm script
+npm run docker:down
+
+# Or directly
 docker-compose down
 
 # Stop and remove volumes (deletes all data)

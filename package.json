@@ -9,7 +9,11 @@
         "build": "tsc -b --noCheck && vite build",
         "lint": "eslint .",
         "optimize": "vite optimize",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "docker:dev": "docker-compose -f docker-compose.dev.yml up -d --build --force-recreate",
+        "docker:prod": "docker-compose -f docker-compose.prod.yml up -d --build --force-recreate",
+        "docker:down": "docker-compose down",
+        "docker:logs": "docker-compose logs -f"
     },
     "dependencies": {
         "@github/spark": ">=0.43.1 <1",

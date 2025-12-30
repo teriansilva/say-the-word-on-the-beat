@@ -55,14 +55,29 @@ For containerized deployment using Docker:
 
 ```bash
 # Development (with hot reload and debugging)
-docker compose -f docker-compose.dev.yml up -d
+npm run docker:dev
 
 # Production (optimized with health checks)
-docker compose -f docker-compose.prod.yml up -d
+npm run docker:prod
+
+# Stop all containers
+npm run docker:down
+
+# View logs
+npm run docker:logs
 
 # The application will be available at http://localhost:8091
 # API available at http://localhost:3847
 ```
+
+#### Docker NPM Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run docker:dev` | Start development with rebuild |
+| `npm run docker:prod` | Start production with rebuild |
+| `npm run docker:down` | Stop all containers |
+| `npm run docker:logs` | Follow container logs |
 
 #### Container Architecture
 

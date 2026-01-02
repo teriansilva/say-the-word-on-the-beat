@@ -983,13 +983,13 @@ function App() {
               <div 
                 className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 lg:gap-8 max-w-6xl w-full flex-shrink-0"
               >
-                {displayedGridItems.map((item, index) => {
+                {(() => {
                   // Calculate interval based on current BPM (twice per beat = 500ms factor)
                   const interval = (60 / displayBpm) * 500
                   // Use 80% of interval for transition, clamped between 100ms and 200ms
                   const transitionDuration = Math.max(100, Math.min(200, interval * 0.8))
                   
-                  return (
+                  return displayedGridItems.map((item, index) => (
                     <GridCard
                       key={index}
                       content={item.content}
@@ -999,8 +999,8 @@ function App() {
                       word={item.word}
                       transitionDuration={transitionDuration}
                     />
-                  )
-                })}
+                  ))
+                })()}
               </div>
               
               <Button

@@ -705,7 +705,7 @@ function App() {
             clearInterval(intervalRef.current)
           }
           
-          const newInterval = (60 / currentIntervalBpm) * 1000
+          const newInterval = (60 / currentIntervalBpm) * 500 // Twice per beat (double frequency)
           intervalRef.current = window.setInterval(playSequence, newInterval)
         }
       }
@@ -717,7 +717,7 @@ function App() {
     
     const getIntervalForRound = (round: number, audioTime?: number) => {
       const roundBpm = calculateRoundBpm(round, audioTime)
-      return (60 / roundBpm) * 1000
+      return (60 / roundBpm) * 500 // Twice per beat (double frequency)
     }
     
     // Track the current grid size

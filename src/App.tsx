@@ -705,7 +705,7 @@ function App() {
             clearInterval(intervalRef.current)
           }
           
-          const newInterval = (60 / currentIntervalBpm) * 500 // Twice per beat (double frequency)
+          const newInterval = (60 / currentIntervalBpm) * 650 // Twice per beat (30% slower)
           intervalRef.current = window.setInterval(playSequence, newInterval)
         }
       }
@@ -717,7 +717,7 @@ function App() {
     
     const getIntervalForRound = (round: number, audioTime?: number) => {
       const roundBpm = calculateRoundBpm(round, audioTime)
-      return (60 / roundBpm) * 500 // Twice per beat (double frequency)
+      return (60 / roundBpm) * 650 // Twice per beat (30% slower)
     }
     
     // Track the current grid size
@@ -984,8 +984,8 @@ function App() {
                 className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 lg:gap-8 max-w-6xl w-full flex-shrink-0"
               >
                 {(() => {
-                  // Calculate interval based on current BPM (twice per beat = 500ms factor)
-                  const interval = (60 / displayBpm) * 500
+                  // Calculate interval based on current BPM (30% slower)
+                  const interval = (60 / displayBpm) * 650
                   // Use 80% of interval for transition, clamped between 100ms and 200ms
                   const transitionDuration = Math.max(100, Math.min(200, interval * 0.8))
                   

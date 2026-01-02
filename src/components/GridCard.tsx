@@ -9,22 +9,27 @@ interface GridCardProps {
   isActive: boolean
   hasBeenRevealed: boolean
   word?: string
+  transitionDuration?: number // Duration in milliseconds
 }
 
-export function GridCard({ content, contentType, isActive, hasBeenRevealed, word }: GridCardProps) {
+export function GridCard({ content, contentType, isActive, hasBeenRevealed, word, transitionDuration }: GridCardProps) {
   const shouldShowContent = hasBeenRevealed
   
   // Sanitize word for display
   const safeWord = word ? sanitizeText(word) : undefined
   
+  // Calculate dynamic transition duration: use prop if provided, otherwise default to 200ms
+  const duration = transitionDuration ?? 200
+  
   return (
     <Card
       className={cn(
-        'aspect-square flex items-center justify-center transition-all duration-200',
+        'aspect-square flex items-center justify-center transition-all',
         'border-4',
         'bg-card text-card-foreground relative overflow-hidden',
         isActive && 'beat-active scale-105 border-accent'
       )}
+      style={{ transitionDuration: `${duration}ms` }}
     >
       {!shouldShowContent ? (
         <div className="relative w-full h-full flex items-center justify-center">

@@ -1,42 +1,72 @@
 # Say the Word on Beat - AI Coding Instructions
 
 ## Project Overview
-A playful React/TypeScript web app recreating the viral "Say the Word on Beat" challenge. Users create picture grids, sync them to music beats, and export videos. Built with Vite, React 19, and GitHub Spark framework.
+A playful React/TypeScript web app recreating the viral "Say the Word on Beat" challenge. Users create picture grids, sync them to music beats, and export videos. Built with Vite, React 19, and localStorage for persistence.
 
 ## Architecture & Core Patterns
 
-### State Management: GitHub Spark KV Store
-- **Use `useKV` hook** from `@github/spark/hooks` for ALL persistent state (not React's useState for persistent data)
-- Pattern: `const [value, setValue] = useKV<Type>('unique-key', defaultValue)`
-- Examples in [App.tsx](../src/App.tsx): `'bpm-value'`, `'image-pool-v2'`, `'custom-audio'`
-- KV state automatically persists to browser storage and enables share links via `window.spark.kv.get/set`
-- **Migration pattern**: When changing data structure, increment key version (e.g., `'image-pool-v2'`) to avoid breaking existing stored data
+### State Management: useLocalStorage Hook
+- **Use `useLocalStorage` hook** from `@/hooks/useLocalStorage` for ALL persistent state
+- Pattern: `const [value, setValue] = useLocalStorage<Type>('unique-key', defaultValue)`
+- Examples in [App.tsx](../src/App.tsx): `'bpm-value'`, `'content-pool-v1'`, `'custom-audio'`
+- State automatically persists to browser localStorage
+- **Migration pattern**: When changing data structure, increment key version (e.g., `'content-pool-v1'`) to avoid breaking existing stored data
 
 ### Dual State Pattern: Persistent + Transient
 App.tsx maintains two state layers:
-- **Persistent** (useKV): User settings that survive page reload (`bpm`, `difficulty`, `imagePool`, `customAudio`)
+- **Persistent** (useLocalStorage): User settings that survive page reload (`bpm`, `difficulty`, `contentPool`, `customAudio`)
 - **Transient** (useState): Playback state that resets (`isPlaying`, `activeIndex`, `revealedIndices`, `currentRound`)
-- Always null-check KV values with fallbacks: `const currentBpm = bpm ?? 91`
+- Always null-check values with fallbacks: `const currentBpm = bpm ?? DEFAULT_BPM`
+
+### Modular Architecture
+
+The app is organized into focused modules:
+
+**Core Libraries** ([src/lib/](../src/lib/)):
+- [types.ts](../src/lib/types.ts) - Shared TypeScript types (`GridItem`, `Difficulty`, `ShareConfig`)
+- [constants.ts](../src/lib/constants.ts) - Game configuration (`BEATS_PER_CARD`, `DEFAULT_BPM`, timing values)
+- [gridGenerator.ts](../src/lib/gridGenerator.ts) - Grid generation logic (`generateGridFromPool`, `shuffleArray`)
+- [bpmAnalyzer.ts](../src/lib/bpmAnalyzer.ts) - Audio BPM detection and analysis
+
+**Custom Hooks** ([src/hooks/](../src/hooks/)):
+- [useGamePlayback.ts](../src/hooks/useGamePlayback.ts) - Beat sequencing, audio sync, round progression
+- [useShareConfig.ts](../src/hooks/useShareConfig.ts) - Share link generation, URL loading
+- [useLocalStorage.ts](../src/hooks/useLocalStorage.ts) - Persistent state management
+- [useDebouncedCallback.ts](../src/hooks/useDebouncedCallback.ts) - Debounced slider values
+
+**Feature Components** ([src/components/](../src/components/)):
+- [GameSettings.tsx](../src/components/GameSettings.tsx) - Settings panel (rounds, difficulty, speed, audio)
+- [FullscreenPlayback.tsx](../src/components/FullscreenPlayback.tsx) - Fullscreen game view with countdown/celebration
+- [FloatingMenu.tsx](../src/components/FloatingMenu.tsx) - Play/share/reset action buttons
+- [GridCard.tsx](../src/components/GridCard.tsx) - Individual card display
+- [ContentPoolManager.tsx](../src/components/ContentPoolManager.tsx) - Image/emoji management
+- [AudioUploader.tsx](../src/components/AudioUploader.tsx) - Audio file upload with BPM analysis
 
 ### Audio Architecture
 Two parallel audio systems with dynamic BPM:
-1. **Default audio**: `DEFAULT_AUDIO_URL` (91 BPM baseline)
+1. **Default audio**: Built-in audio (91 BPM baseline)
 2. **Custom audio**: User-uploaded files with automatic BPM analysis
 
 **Key refs**: `customAudioRef`, `defaultAudioRef`, `intervalRef`, `bpmCheckIntervalRef`
 
 **Dynamic BPM Flow**:
-- Upload audio → `analyzeBpm()` ([bpmAnalyzer.ts](../src/lib/bpmAnalyzer.ts)) detects tempo changes → stores `BpmAnalysisResult` with segments
+- Upload audio → `analyzeBpm()` detects tempo changes → stores `BpmAnalysisResult` with segments
 - During playback: `getBpmAtTime()` returns current BPM based on audio position → adjusts beat intervals in real-time
-- See `calculateRoundBpm()` in [App.tsx](../src/App.tsx#L145-158) for multiplier logic combining detected BPM + user speed adjustment
+- See `calculateRoundBpm()` in [useGamePlayback.ts](../src/hooks/useGamePlayback.ts) for multiplier logic
+
+### Beat Timing Configuration
+Located in [constants.ts](../src/lib/constants.ts):
+- `BEATS_PER_CARD = 0.5` - Cards change on half-beats (twice per musical beat)
+- `calculateBeatInterval(bpm)` - Calculates interval in ms from BPM
+- `calculateTransitionDuration(bpm)` - Calculates smooth animation duration
 
 ### Grid Generation System
-Located in `generateGridFromPool()` ([App.tsx](../src/App.tsx#L42-96)):
-- **Easy**: Pairs of same images (predictable)
-- **Medium**: 30% chance to repeat previous image
-- **Hard**: Guaranteed different image each card
+Located in [gridGenerator.ts](../src/lib/gridGenerator.ts):
+- **Easy**: Pairs of same items (predictable)
+- **Medium**: 30% chance to repeat previous item
+- **Hard**: Guaranteed different item each card
 - Re-generates on difficulty change or round completion
-- Falls back to `DEFAULT_ITEMS` (emoji array) when image pool is empty
+- Falls back to default emojis when content pool is empty
 
 ## Component Organization
 

@@ -20,7 +20,7 @@ import type { ContentPoolItem } from '@/components/ContentPoolManager'
  * 
  * Use musical subdivisions (1, 2/3, 0.5, 0.25) to stay "on the beat"
  */
-export const BEATS_PER_CARD = 1.0
+export const BEATS_PER_CARD = .5
 
 /**
  * Base playback speed multiplier.
@@ -99,17 +99,8 @@ export const DEFAULT_EMOJIS = [
   '🧢', '🦇', '🐝', '🦋', '🐛', '🌸', '🌻', '🌹', '🍀', '🌵'
 ]
 
-/** Default content pool with initial emojis for new users */
-export const DEFAULT_CONTENT_POOL: ContentPoolItem[] = [
-  { content: '🐱', type: 'emoji' },
-  { content: '🐶', type: 'emoji' },
-  { content: '🍎', type: 'emoji' },
-  { content: '⚽', type: 'emoji' },
-  { content: '⭐', type: 'emoji' },
-  { content: '🎸', type: 'emoji' },
-  { content: '🌈', type: 'emoji' },
-  { content: '🔥', type: 'emoji' },
-]
+/** Default content pool - empty so random emojis are used when playing */
+export const DEFAULT_CONTENT_POOL: ContentPoolItem[] = []
 
 // ============================================================================
 // Utility Functions

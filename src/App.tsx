@@ -89,7 +89,7 @@ function App() {
   const currentBaseBpm = baseBpm ?? DEFAULT_BPM
   const currentDifficulty = difficulty ?? 'medium'
   const currentContentPool = contentPool ?? []
-  const currentRounds = rounds ?? 3
+  const currentRounds = rounds ?? 5
   const currentIncreaseSpeed = increaseSpeed ?? false
   const currentSpeedIncreasePercent = speedIncreasePercent ?? 5
   const currentCountdownDuration = countdownDuration ?? 2

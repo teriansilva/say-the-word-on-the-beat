@@ -158,7 +158,7 @@ interface ActiveGameGridProps {
   gridItems: GridItem[]
   activeIndex: number | null
   revealedIndices: Set<number>
-  showImagesImmediately: boolean
+  isAppearancePhase: boolean
   onStop: () => void
 }
 
@@ -169,7 +169,7 @@ function ActiveGameGrid({
   gridItems,
   activeIndex,
   revealedIndices,
-  showImagesImmediately,
+  isAppearancePhase,
   onStop,
 }: ActiveGameGridProps) {
   const transitionDuration = calculateTransitionDuration(displayBpm)
@@ -188,18 +188,36 @@ function ActiveGameGrid({
       
       {/* Game grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 lg:gap-8 max-w-6xl w-full flex-shrink-0">
-        {gridItems.map((item, index) => (
-          <GridCard
-            key={index}
-            content={item.content}
-            contentType={item.type}
-            isActive={activeIndex === index}
-            hasBeenRevealed={revealedIndices.has(index)}
-            showImagesImmediately={showImagesImmediately}
-            word={item.word}
-            transitionDuration={transitionDuration}
-          />
-        ))}
+        {gridItems.map((item, index) => {
+          const isRevealed = revealedIndices.has(index)
+          
+          // During appearance phase, only show revealed cards with animation
+          // During highlight phase, all cards are visible
+          if (isAppearancePhase && !isRevealed) {
+            // Placeholder for unrevealed cards - maintains grid layout
+            return (
+              <div key={index} className="aspect-square" />
+            )
+          }
+          
+          return (
+            <motion.div
+              key={`${index}-${currentRound}-${isRevealed ? 'revealed' : 'hidden'}`}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: transitionDuration / 1000, ease: 'easeOut' }}
+            >
+              <GridCard
+                content={item.content}
+                contentType={item.type}
+                isActive={activeIndex === index}
+                hasBeenRevealed={isRevealed}
+                word={item.word}
+                transitionDuration={transitionDuration}
+              />
+            </motion.div>
+          )
+        })}
       </div>
       
       {/* Stop button */}
@@ -231,7 +249,7 @@ interface FullscreenPlaybackProps {
   gridItems: GridItem[]
   activeIndex: number | null
   revealedIndices: Set<number>
-  showImagesImmediately: boolean
+  isAppearancePhase: boolean
   onStop: () => void
 }
 
@@ -245,7 +263,7 @@ export function FullscreenPlayback({
   gridItems,
   activeIndex,
   revealedIndices,
-  showImagesImmediately,
+  isAppearancePhase,
   onStop,
 }: FullscreenPlaybackProps) {
   if (!isVisible) return null
@@ -264,7 +282,7 @@ export function FullscreenPlayback({
           gridItems={gridItems}
           activeIndex={activeIndex}
           revealedIndices={revealedIndices}
-          showImagesImmediately={showImagesImmediately}
+          isAppearancePhase={isAppearancePhase}
           onStop={onStop}
         />
       )}

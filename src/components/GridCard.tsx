@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card'
-import { Plus, Question } from '@phosphor-icons/react'
+import { Plus } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { sanitizeText } from '@/lib/security'
 
@@ -8,14 +8,11 @@ interface GridCardProps {
   contentType: 'emoji' | 'image'
   isActive: boolean
   hasBeenRevealed: boolean
-  showImagesImmediately?: boolean
   word?: string
   transitionDuration?: number // Duration in milliseconds
 }
 
-export function GridCard({ content, contentType, isActive, hasBeenRevealed, showImagesImmediately, word, transitionDuration }: GridCardProps) {
-  const shouldShowContent = showImagesImmediately || hasBeenRevealed
-  
+export function GridCard({ content, contentType, isActive, hasBeenRevealed, word, transitionDuration }: GridCardProps) {
   // Sanitize word for display
   const safeWord = word ? sanitizeText(word) : undefined
   
@@ -32,11 +29,7 @@ export function GridCard({ content, contentType, isActive, hasBeenRevealed, show
       )}
       style={{ transitionDuration: `${duration}ms` }}
     >
-      {!shouldShowContent ? (
-        <div className="relative w-full h-full flex items-center justify-center">
-          <Question size={64} weight="bold" className="text-muted-foreground" />
-        </div>
-      ) : content ? (
+      {content ? (
         contentType === 'emoji' ? (
           <div className="relative w-full h-full flex items-center justify-center">
             <span className="text-6xl md:text-7xl select-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>

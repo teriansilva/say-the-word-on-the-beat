@@ -44,6 +44,7 @@ interface UseGamePlaybackOptions {
   setCountdown: (value: number | null | ((prev: number | null) => number | null)) => void
   setDisplayBpm: (value: number) => void
   setGridItems: (items: GridItem[]) => void
+  setIsAppearancePhase: (value: boolean) => void
   
   // Audio refs
   customAudioRef: React.RefObject<HTMLAudioElement | null>
@@ -74,6 +75,7 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
     setCountdown,
     setDisplayBpm,
     setGridItems,
+    setIsAppearancePhase,
     customAudioRef,
     defaultAudioRef,
     completeSoundRef,
@@ -126,12 +128,16 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
 
   /**
    * Begin the beat sequence after countdown completes.
+   * Each round has two phases:
+   * 1. Appearance phase: Cards appear one by one with animation
+   * 2. Highlight phase: Cards are highlighted one by one with yellow frame
    */
   const beginPlayback = useCallback(() => {
     setIsPlaying(true)
-    setRevealedIndices(new Set())
+    // Note: revealedIndices and isAppearancePhase are already set in startBeat
     let index = -1
     let roundCount = 1
+    let isInAppearancePhase = true // Local tracking for the closure
     
     const audioRef = customAudio ? customAudioRef : defaultAudioRef
     
@@ -178,72 +184,92 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
     
     // Track current grid size (may change between rounds)
     let currentGridSize = displayedGridItems.length
+    let completedFirstCard = false // Track if we've shown at least one card
     
     /**
      * Main sequence function - advances to next card on each beat.
+     * Handles both appearance and highlight phases.
      */
     const playSequence = () => {
       index = (index + 1) % currentGridSize
       
-      // Check for round completion
-      if (index === 0 && roundCount > 1) {
-        if (roundCount > currentRounds) {
-          // Game complete!
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current)
-            intervalRef.current = null
-          }
-          if (bpmCheckIntervalRef.current) {
-            clearInterval(bpmCheckIntervalRef.current)
-            bpmCheckIntervalRef.current = null
-          }
-          setIsPlaying(false)
-          setActiveIndex(null)
-          setIsFinished(true)
+      // Check for phase/round completion when we wrap back to 0 (after showing all cards)
+      if (index === 0 && completedFirstCard) {
+        if (isInAppearancePhase) {
+          // Finished appearance phase, switch to highlight phase
+          isInAppearancePhase = false
+          setIsAppearancePhase(false)
+          // Don't reset revealedIndices - keep all cards visible
+          // index is already 0, so we start highlighting from the beginning
+        } else {
+          // Finished highlight phase, increment round
+          roundCount++
           
-          // Play completion sound
-          if (completeSoundRef.current) {
-            completeSoundRef.current.currentTime = 0
-            completeSoundRef.current.play().catch(err => 
-              console.debug('Complete sound play error:', err)
-            )
+          // Check if game is complete
+          if (roundCount > currentRounds) {
+            // Game complete!
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current)
+              intervalRef.current = null
+            }
+            if (bpmCheckIntervalRef.current) {
+              clearInterval(bpmCheckIntervalRef.current)
+              bpmCheckIntervalRef.current = null
+            }
+            setIsPlaying(false)
+            setActiveIndex(null)
+            setIsFinished(true)
+            
+            // Play completion sound
+            if (completeSoundRef.current) {
+              completeSoundRef.current.currentTime = 0
+              completeSoundRef.current.play().catch(err => 
+                console.debug('Complete sound play error:', err)
+              )
+            }
+            return
           }
-          return
-        }
-        
-        // Start new round with fresh grid
-        const newGrid = generateGridFromPool(currentContentPool, currentDifficulty)
-        setGridItems(newGrid)
-        currentGridSize = newGrid.length
-        
-        setRevealedIndices(new Set())
-        setCurrentRound(roundCount)
-        
-        // Update playback speed for new round
-        if (audioRef.current) {
-          audioRef.current.playbackRate = calculatePlaybackSpeed(roundCount)
-        }
-        
-        // Update interval for non-analyzed audio
-        if (!(customAudio && currentBpmAnalysis)) {
-          const newBpm = calculateRoundBpm(roundCount)
-          setDisplayBpm(Math.round(newBpm))
           
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current)
+          // Start new round with fresh grid
+          const newGrid = generateGridFromPool(currentContentPool, currentDifficulty)
+          setGridItems(newGrid)
+          currentGridSize = newGrid.length
+          
+          // Reset for new round - start with appearance phase again
+          setRevealedIndices(new Set())
+          setCurrentRound(roundCount)
+          isInAppearancePhase = true
+          setIsAppearancePhase(true)
+          
+          // Update playback speed for new round
+          if (audioRef.current) {
+            audioRef.current.playbackRate = calculatePlaybackSpeed(roundCount)
           }
-          intervalRef.current = window.setInterval(playSequence, getIntervalForRound(roundCount))
+          
+          // Update interval for non-analyzed audio
+          if (!(customAudio && currentBpmAnalysis)) {
+            const newBpm = calculateRoundBpm(roundCount)
+            setDisplayBpm(Math.round(newBpm))
+            
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current)
+            }
+            intervalRef.current = window.setInterval(playSequence, getIntervalForRound(roundCount))
+          }
         }
       }
       
-      // Track round progression
-      if (index === currentGridSize - 1) {
-        roundCount++
-      }
+      // Mark that we've completed at least one card
+      completedFirstCard = true
       
-      // Update active card state
-      setActiveIndex(index)
-      setRevealedIndices(prev => new Set([...prev, index]))
+      if (isInAppearancePhase) {
+        // Appearance phase: reveal cards one by one, no highlight
+        setActiveIndex(null)
+        setRevealedIndices(prev => new Set([...prev, index]))
+      } else {
+        // Highlight phase: highlight cards with yellow frame
+        setActiveIndex(index)
+      }
     }
     
     // Start the sequence
@@ -255,7 +281,7 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
     currentBpmAnalysis, currentRounds, currentContentPool, currentDifficulty,
     displayedGridItems.length, calculateRoundBpm, calculatePlaybackSpeed,
     setIsPlaying, setRevealedIndices, setDisplayBpm, setActiveIndex,
-    setIsFinished, setGridItems, setCurrentRound
+    setIsFinished, setGridItems, setCurrentRound, setIsAppearancePhase
   ])
 
   /**
@@ -268,6 +294,10 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
       return
     }
     
+    // Set appearance phase and clear revealed indices BEFORE showing fullscreen
+    // This prevents a flash where all cards appear briefly
+    setIsAppearancePhase(true)
+    setRevealedIndices(new Set())
     setIsFullscreen(true)
     setCurrentRound(1)
     
@@ -306,7 +336,8 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
   }, [
     currentCountdownDuration, currentAudioStartTime, currentBpmAnalysis,
     customAudio, customAudioRef, defaultAudioRef, calculatePlaybackSpeed,
-    setIsFullscreen, setCurrentRound, setCountdown, beginPlayback
+    setIsFullscreen, setCurrentRound, setCountdown, beginPlayback,
+    setIsAppearancePhase, setRevealedIndices
   ])
 
   /**
@@ -320,6 +351,7 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
     setIsFullscreen(false)
     setCountdown(null)
     setIsFinished(false)
+    setIsAppearancePhase(false)
     setDisplayBpm(customAudio && currentBpmAnalysis ? currentBaseBpm : DEFAULT_BPM)
     
     // Clear intervals
@@ -350,7 +382,7 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
     customAudio, currentBaseBpm, currentBpmAnalysis, currentAudioStartTime,
     customAudioRef, defaultAudioRef,
     setIsPlaying, setActiveIndex, setRevealedIndices, setCurrentRound,
-    setIsFullscreen, setCountdown, setIsFinished, setDisplayBpm
+    setIsFullscreen, setCountdown, setIsFinished, setDisplayBpm, setIsAppearancePhase
   ])
 
   /**

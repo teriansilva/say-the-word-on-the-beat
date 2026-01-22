@@ -57,6 +57,7 @@ function App() {
   const [increaseSpeed, setIncreaseSpeed] = useLocalStorage<boolean>('increase-speed', false)
   const [speedIncreasePercent, setSpeedIncreasePercent] = useLocalStorage<number>('speed-increase-percent', 5)
   const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 2)
+  const [showImagesImmediately, setShowImagesImmediately] = useLocalStorage<boolean>('show-images-immediately', false)
 
   // ==========================================================================
   // Transient State (resets on page reload)
@@ -94,6 +95,7 @@ function App() {
   const currentCountdownDuration = countdownDuration ?? 2
   const currentBpmAnalysis = bpmAnalysis ?? null
   const currentAudioStartTime = audioStartTime ?? 0
+  const currentShowImagesImmediately = showImagesImmediately ?? false
 
   // ==========================================================================
   // Debounced Slider Values (smooth UI with delayed persistence)
@@ -288,6 +290,7 @@ function App() {
         gridItems={displayedGridItems}
         activeIndex={activeIndex}
         revealedIndices={revealedIndices}
+        showImagesImmediately={currentShowImagesImmediately}
         onStop={stopBeat}
       />
       
@@ -327,6 +330,8 @@ function App() {
             onIncreaseSpeedChange={setIncreaseSpeed}
             speedIncreasePercent={localSpeedPercent}
             onSpeedIncreasePercentChange={setLocalSpeedPercent}
+            showImagesImmediately={currentShowImagesImmediately}
+            onShowImagesImmediatelyChange={setShowImagesImmediately}
             audioUrl={customAudio ?? null}
             onAudioUpload={handleAudioUpload}
             onAudioRemove={handleAudioRemove}

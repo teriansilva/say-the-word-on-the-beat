@@ -185,6 +185,39 @@ function SpeedIncreaseSetting({
   )
 }
 
+interface ShowImagesImmediatelySettingProps {
+  enabled: boolean
+  onEnabledChange: (enabled: boolean) => void
+}
+
+function ShowImagesImmediatelySetting({
+  enabled,
+  onEnabledChange,
+}: ShowImagesImmediatelySettingProps) {
+  return (
+    <Card className="p-4 border-2">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <Label 
+            htmlFor="show-images-immediately" 
+            className="text-sm font-semibold text-foreground cursor-pointer"
+          >
+            Show images immediately
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Display images from the start instead of question marks
+          </p>
+        </div>
+        <Switch
+          id="show-images-immediately"
+          checked={enabled}
+          onCheckedChange={onEnabledChange}
+        />
+      </div>
+    </Card>
+  )
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -207,6 +240,10 @@ interface GameSettingsProps {
   onIncreaseSpeedChange: (enabled: boolean) => void
   speedIncreasePercent: number
   onSpeedIncreasePercentChange: (percent: number) => void
+  
+  // Show images immediately
+  showImagesImmediately: boolean
+  onShowImagesImmediatelyChange: (enabled: boolean) => void
   
   // Audio
   audioUrl: string | null
@@ -236,6 +273,8 @@ export function GameSettings({
   onIncreaseSpeedChange,
   speedIncreasePercent,
   onSpeedIncreasePercentChange,
+  showImagesImmediately,
+  onShowImagesImmediatelyChange,
   audioUrl,
   onAudioUpload,
   onAudioRemove,
@@ -273,6 +312,11 @@ export function GameSettings({
         percent={speedIncreasePercent}
         onPercentChange={onSpeedIncreasePercentChange}
         disabled={isPlaying}
+      />
+      
+      <ShowImagesImmediatelySetting
+        enabled={showImagesImmediately}
+        onEnabledChange={onShowImagesImmediatelyChange}
       />
       
       <AudioUploader

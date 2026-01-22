@@ -8,12 +8,13 @@ interface GridCardProps {
   contentType: 'emoji' | 'image'
   isActive: boolean
   hasBeenRevealed: boolean
+  showImagesImmediately?: boolean
   word?: string
   transitionDuration?: number // Duration in milliseconds
 }
 
-export function GridCard({ content, contentType, isActive, hasBeenRevealed, word, transitionDuration }: GridCardProps) {
-  const shouldShowContent = hasBeenRevealed
+export function GridCard({ content, contentType, isActive, hasBeenRevealed, showImagesImmediately, word, transitionDuration }: GridCardProps) {
+  const shouldShowContent = showImagesImmediately || hasBeenRevealed
   
   // Sanitize word for display
   const safeWord = word ? sanitizeText(word) : undefined

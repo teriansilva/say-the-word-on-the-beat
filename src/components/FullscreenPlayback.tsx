@@ -158,6 +158,7 @@ interface ActiveGameGridProps {
   gridItems: GridItem[]
   activeIndex: number | null
   revealedIndices: Set<number>
+  showImagesImmediately: boolean
   onStop: () => void
 }
 
@@ -168,6 +169,7 @@ function ActiveGameGrid({
   gridItems,
   activeIndex,
   revealedIndices,
+  showImagesImmediately,
   onStop,
 }: ActiveGameGridProps) {
   const transitionDuration = calculateTransitionDuration(displayBpm)
@@ -193,6 +195,7 @@ function ActiveGameGrid({
             contentType={item.type}
             isActive={activeIndex === index}
             hasBeenRevealed={revealedIndices.has(index)}
+            showImagesImmediately={showImagesImmediately}
             word={item.word}
             transitionDuration={transitionDuration}
           />
@@ -228,6 +231,7 @@ interface FullscreenPlaybackProps {
   gridItems: GridItem[]
   activeIndex: number | null
   revealedIndices: Set<number>
+  showImagesImmediately: boolean
   onStop: () => void
 }
 
@@ -241,6 +245,7 @@ export function FullscreenPlayback({
   gridItems,
   activeIndex,
   revealedIndices,
+  showImagesImmediately,
   onStop,
 }: FullscreenPlaybackProps) {
   if (!isVisible) return null
@@ -259,6 +264,7 @@ export function FullscreenPlayback({
           gridItems={gridItems}
           activeIndex={activeIndex}
           revealedIndices={revealedIndices}
+          showImagesImmediately={showImagesImmediately}
           onStop={onStop}
         />
       )}

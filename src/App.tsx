@@ -95,7 +95,7 @@ function App() {
   const currentCountdownDuration = countdownDuration ?? 2
   const currentBpmAnalysis = bpmAnalysis ?? null
   const currentAudioStartTime = audioStartTime ?? 0
-  const currentShowImagesImmediately = showImagesImmediately ?? false
+  const currentShowImagesImmediately = showImagesImmediately ?? true
 
   // ==========================================================================
   // Debounced Slider Values (smooth UI with delayed persistence)

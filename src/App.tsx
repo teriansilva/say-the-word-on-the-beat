@@ -53,11 +53,11 @@ function App() {
   const [customAudio, setCustomAudio] = useLocalStorage<string | null>('custom-audio', null)
   const [bpmAnalysis, setBpmAnalysis] = useLocalStorage<BpmAnalysisResult | null>('bpm-analysis', null)
   const [audioStartTime, setAudioStartTime] = useLocalStorage<number>('audio-start-time', 0)
-  const [rounds, setRounds] = useLocalStorage<number>('rounds', 3)
+  const [rounds, setRounds] = useLocalStorage<number>('rounds', 5)
   const [increaseSpeed, setIncreaseSpeed] = useLocalStorage<boolean>('increase-speed', false)
   const [speedIncreasePercent, setSpeedIncreasePercent] = useLocalStorage<number>('speed-increase-percent', 5)
   const [countdownDuration, setCountdownDuration] = useLocalStorage<number>('countdown-duration', 2)
-  const [showImagesImmediately, setShowImagesImmediately] = useLocalStorage<boolean>('show-images-immediately', false)
+  const [showImagesImmediately, setShowImagesImmediately] = useLocalStorage<boolean>('show-images-immediately', true)
 
   // ==========================================================================
   // Transient State (resets on page reload)

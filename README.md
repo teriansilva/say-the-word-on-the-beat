@@ -1,5 +1,7 @@
 # Say the Word on Beat 🎵
 
+<a href="https://buymeacoffee.com/teriansilva" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50" ></a>
+
 A playful, interactive web platform that recreates the viral "Say the Word on Beat" social media challenge. Create custom picture grids, sync them to a beat, and share your creations!
 
 ## ✨ Features

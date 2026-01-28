@@ -220,6 +220,25 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
             setActiveIndex(null)
             setIsFinished(true)
             
+            // Fade out the music over 1 second
+            if (audioRef.current) {
+              const audio = audioRef.current
+              const fadeInterval = 50 // Update every 50ms
+              const fadeSteps = 1000 / fadeInterval // 20 steps over 1 second
+              const volumeStep = audio.volume / fadeSteps
+              
+              const fadeOut = setInterval(() => {
+                if (audio.volume > volumeStep) {
+                  audio.volume -= volumeStep
+                } else {
+                  audio.volume = 0
+                  audio.pause()
+                  audio.volume = 1 // Reset volume for next play
+                  clearInterval(fadeOut)
+                }
+              }, fadeInterval)
+            }
+            
             // Play completion sound
             if (completeSoundRef.current) {
               completeSoundRef.current.currentTime = 0

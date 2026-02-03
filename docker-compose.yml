@@ -7,6 +7,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_ADSENSE_CLIENT_ID=${VITE_ADSENSE_CLIENT_ID}
     container_name: say-the-word-on-beat
     ports:
       - "8091:80"

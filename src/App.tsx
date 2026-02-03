@@ -23,6 +23,7 @@ import { FullscreenPlayback } from '@/components/FullscreenPlayback'
 import { FloatingMenu } from '@/components/FloatingMenu'
 import { PublicGamesPanel } from '@/components/PublicGamesPanel'
 import { ShareModal } from '@/components/ShareModal'
+import { AdSidebar, AdTopBanner } from '@/components/AdBanner'
 import { generateGridFromPool } from '@/lib/gridGenerator'
 import { DEFAULT_CONTENT_POOL, DEFAULT_BPM } from '@/lib/constants'
 import type { GridItem, Difficulty } from '@/lib/types'
@@ -316,8 +317,15 @@ function App() {
           </p>
         </header>
 
-        {/* Two-column Layout: Settings + Community Games */}
+        {/* Top Ad Banner (mobile/tablet) */}
+        <div className="xl:hidden">
+          <AdTopBanner />
+        </div>
+
+        {/* Two-column Layout: Ad Sidebar + Settings + Community Games */}
         <div className="flex flex-col xl:flex-row gap-6">
+          {/* Left Ad Sidebar (desktop only) */}
+          <AdSidebar className="hidden xl:block" />
           {/* Settings Panel */}
           <GameSettings
             contentPool={currentContentPool}
@@ -353,6 +361,11 @@ function App() {
         {/* Mobile: Community Games (below settings) */}
         <div className="xl:hidden">
           <PublicGamesPanel onLoadGame={loadPublicGame} />
+        </div>
+        
+        {/* Bottom Ad Banner (mobile/tablet) */}
+        <div className="xl:hidden">
+          <AdTopBanner />
         </div>
 
         {/* Footer */}

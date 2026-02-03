@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge'
 import { PauseCircle } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { GridCard } from '@/components/GridCard'
-import { AdCompletionBanner } from '@/components/AdBanner'
 import { calculateTransitionDuration } from '@/lib/constants'
 import type { GridItem } from '@/lib/types'
 
@@ -146,9 +145,6 @@ function CompletionCelebration({ totalRounds, onExit }: CompletionCelebrationPro
           >
             Exit
           </Button>
-          
-          {/* Ad Banner below completion content */}
-          <AdCompletionBanner />
         </motion.div>
       </motion.div>
     </div>

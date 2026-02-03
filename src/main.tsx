@@ -17,6 +17,16 @@ if (wasCleared) {
   console.log('[App] Local storage was cleared due to inactivity. Starting fresh.')
 }
 
+// Load Google AdSense script dynamically if client ID is configured
+const adsenseClientId = import.meta.env.VITE_ADSENSE_CLIENT_ID
+if (adsenseClientId) {
+  const script = document.createElement('script')
+  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`
+  script.async = true
+  script.crossOrigin = 'anonymous'
+  document.head.appendChild(script)
+}
+
 createRoot(document.getElementById('root')!).render(
   <ErrorBoundary FallbackComponent={ErrorFallback}>
     <Analytics />

@@ -3,6 +3,10 @@
 # Stage 1: Build the application
 FROM node:20-alpine AS builder
 
+# Build arguments for Vite env vars
+ARG VITE_ADSENSE_CLIENT_ID
+ENV VITE_ADSENSE_CLIENT_ID=$VITE_ADSENSE_CLIENT_ID
+
 # Set working directory
 WORKDIR /app
 

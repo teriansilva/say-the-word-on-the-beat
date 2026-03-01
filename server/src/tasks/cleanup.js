@@ -44,7 +44,8 @@ async function cleanup() {
     // 1. Find and delete stale shares
     console.log('[Cleanup] Step 1: Finding stale shares...');
     const staleShares = await Share.find({
-      lastPlayedAt: { $lt: cutoffDate }
+      lastPlayedAt: { $lt: cutoffDate },
+      isPublic: { $ne: true }
     });
 
     console.log(`[Cleanup] Found ${staleShares.length} stale shares`);

@@ -41,16 +41,19 @@ function extractPreview(config) {
   };
 }
 
-// GET /api/shares/public - Get public shares with pagination (sorted by likes)
+// GET /api/shares/public - Get public shares with pagination
 router.get('/public', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
     const skip = (page - 1) * limit;
+    const sort = req.query.sort === 'newest'
+      ? { createdAt: -1 }
+      : { likes: -1, createdAt: -1 };
 
     const [shares, total] = await Promise.all([
       Share.find({ isPublic: true })
-        .sort({ likes: -1, createdAt: -1 })
+        .sort(sort)
         .skip(skip)
         .limit(limit)
         .select('guid title likes preview createdAt likedBy'),
@@ -132,13 +135,31 @@ router.post('/',
       return res.status(400).json({ error: 'config is required' });
     }
 
-    // Session-based cooldown check
-    if (req.sessionId) {
+    // All shares must have at least one meaningful customization
+    const contentItems = config.content || config.images || [];
+    const hasContent    = Array.isArray(contentItems) && contentItems.length > 0;
+    const hasAudio      = !!config.audio;
+    const hasCustomDiff = config.difficulty && config.difficulty !== 'medium';
+    const hasCustomBpm  = config.bpm && config.bpm !== 91;
+    const hasCustomRounds = config.rounds && config.rounds !== 5;
+    const hasSpeedChange  = config.increaseSpeed === true;
+
+    if (!hasContent && !hasAudio && !hasCustomDiff && !hasCustomBpm && !hasCustomRounds && !hasSpeedChange) {
+      return res.status(400).json({ error: 'Customize your game before sharing — change the content, audio, BPM, or difficulty first.' });
+    }
+
+    // Public shares additionally require actual content items
+    if (isPublic && !hasContent) {
+      return res.status(400).json({ error: 'Public games must have at least one content item. Add some images or emojis first.' });
+    }
+
+    // Session-based cooldown check (skipped in development)
+    if (req.sessionId && process.env.NODE_ENV === 'production') {
       const session = await Session.findById(req.sessionId);
-      
+
       if (session && session.lastShareCreatedAt) {
         const elapsed = Date.now() - session.lastShareCreatedAt.getTime();
-        
+
         if (elapsed < SHARE_COOLDOWN_MS) {
           const waitTime = Math.ceil((SHARE_COOLDOWN_MS - elapsed) / 1000);
           return res.status(429).json({

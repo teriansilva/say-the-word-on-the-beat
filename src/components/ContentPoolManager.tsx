@@ -220,12 +220,12 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
                   </div>
                   
                   {editingIndex === index ? (
-                    <div className="flex gap-0.5">
+                    <div className="flex gap-1">
                       <Input
                         value={editingWord}
                         onChange={(e) => setEditingWord(e.target.value)}
                         placeholder="Word"
-                        className="text-[10px] h-5 px-1"
+                        className="text-xs h-7 px-2"
                         maxLength={20}
                         autoFocus
                         onKeyDown={(e) => {
@@ -240,7 +240,7 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
                       <Button
                         size="sm"
                         onClick={() => handleSaveWord(index)}
-                        className="h-5 px-1 text-[10px]"
+                        className="h-7 px-2 text-xs"
                       >
                         ✓
                       </Button>
@@ -250,9 +250,9 @@ export function ContentPoolManager({ items, onItemsChange }: ContentPoolManagerP
                       size="sm"
                       variant="outline"
                       onClick={() => handleEditWord(index)}
-                      className="w-full h-5 text-[10px] gap-0.5 px-1"
+                      className="w-full h-7 text-xs gap-1 px-2"
                     >
-                      <Pencil size={10} weight="bold" />
+                      <Pencil size={12} weight="bold" />
                       {item.word ? 'Edit' : 'Word'}
                     </Button>
                   )}

@@ -11,9 +11,11 @@ interface ShareModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onGenerateShare: (options: { isPublic: boolean; title: string; _hp_field?: string; _submit_time?: number }) => Promise<string>
+  hasContent: boolean
+  onPublicShare?: () => void
 }
 
-export function ShareModal({ open, onOpenChange, onGenerateShare }: ShareModalProps) {
+export function ShareModal({ open, onOpenChange, onGenerateShare, hasContent, onPublicShare }: ShareModalProps) {
   const [copied, setCopied] = useState(false)
   const [shareUrl, setShareUrl] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -51,6 +53,7 @@ export function ShareModal({ open, onOpenChange, onGenerateShare }: ShareModalPr
       setShareUrl(url)
       if (isPublic) {
         toast.success('Game shared publicly!')
+        onPublicShare?.()
       } else {
         toast.success('Share link generated!')
       }
@@ -130,20 +133,23 @@ export function ShareModal({ open, onOpenChange, onGenerateShare }: ShareModalPr
               </div>
               
               {/* Public toggle */}
-              <div className="flex items-center justify-between p-3 rounded-lg border-2 bg-muted/30">
+              <div className={`flex items-center justify-between p-3 rounded-lg border-2 bg-muted/30 ${!hasContent ? 'opacity-60' : ''}`}>
                 <div className="space-y-0.5">
                   <Label htmlFor="share-public" className="text-sm font-semibold cursor-pointer flex items-center gap-2">
                     <Globe size={18} weight="bold" className="text-primary" />
                     Share Publicly
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Let others discover and play your game
+                    {hasContent
+                      ? 'Let others discover and play your game'
+                      : 'Add at least one image or emoji to share publicly'}
                   </p>
                 </div>
                 <Switch
                   id="share-public"
                   checked={isPublic}
                   onCheckedChange={setIsPublic}
+                  disabled={!hasContent}
                 />
               </div>
               

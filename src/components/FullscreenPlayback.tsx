@@ -7,7 +7,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { PauseCircle } from '@phosphor-icons/react'
+import { ArrowClockwise, PauseCircle, ShareNetwork } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { GridCard } from '@/components/GridCard'
 import { calculateTransitionDuration } from '@/lib/constants'
@@ -57,9 +57,11 @@ function CountdownDisplay({ countdown, totalRounds }: CountdownDisplayProps) {
 interface CompletionCelebrationProps {
   totalRounds: number
   onExit: () => void
+  onShare: () => void
+  onRestart: () => void
 }
 
-function CompletionCelebration({ totalRounds, onExit }: CompletionCelebrationProps) {
+function CompletionCelebration({ totalRounds, onExit, onShare, onRestart }: CompletionCelebrationProps) {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8 overflow-hidden relative">
       {/* Confetti particles */}
@@ -131,16 +133,34 @@ function CompletionCelebration({ totalRounds, onExit }: CompletionCelebrationPro
           </motion.p>
         </motion.div>
         
-        <motion.div 
-          className="flex flex-col items-center gap-4"
+        <motion.div
+          className="flex items-center justify-center gap-4"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-        >                  
+        >
           <Button
             size="lg"
             variant="default"
-            className="h-14 px-10 text-xl font-bold"
+            className="h-14 px-8 text-xl font-bold gap-2"
+            onClick={onRestart}
+          >
+            <ArrowClockwise size={26} weight="bold" />
+            Restart
+          </Button>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="h-14 px-8 text-xl font-bold gap-2"
+            onClick={onShare}
+          >
+            <ShareNetwork size={26} weight="fill" />
+            Share
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-14 px-8 text-xl font-bold"
             onClick={onExit}
           >
             Exit
@@ -251,6 +271,8 @@ interface FullscreenPlaybackProps {
   revealedIndices: Set<number>
   isAppearancePhase: boolean
   onStop: () => void
+  onShare: () => void
+  onRestart: () => void
 }
 
 export function FullscreenPlayback({
@@ -265,15 +287,17 @@ export function FullscreenPlayback({
   revealedIndices,
   isAppearancePhase,
   onStop,
+  onShare,
+  onRestart,
 }: FullscreenPlaybackProps) {
   if (!isVisible) return null
-  
+
   return (
     <div className="fixed inset-0 bg-background z-[100] flex items-center justify-center">
       {countdown !== null ? (
         <CountdownDisplay countdown={countdown} totalRounds={totalRounds} />
       ) : isFinished ? (
-        <CompletionCelebration totalRounds={totalRounds} onExit={onStop} />
+        <CompletionCelebration totalRounds={totalRounds} onExit={onStop} onShare={onShare} onRestart={onRestart} />
       ) : (
         <ActiveGameGrid
           currentRound={currentRound}

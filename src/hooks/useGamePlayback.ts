@@ -312,9 +312,20 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
       toast.error('Invalid countdown duration')
       return
     }
-    
+
+    // Clear any stale intervals from a previous game
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+    if (bpmCheckIntervalRef.current) {
+      clearInterval(bpmCheckIntervalRef.current)
+      bpmCheckIntervalRef.current = null
+    }
+
     // Set appearance phase and clear revealed indices BEFORE showing fullscreen
     // This prevents a flash where all cards appear briefly
+    setIsFinished(false)
     setIsAppearancePhase(true)
     setRevealedIndices(new Set())
     setIsFullscreen(true)
@@ -356,7 +367,7 @@ export function useGamePlayback(options: UseGamePlaybackOptions) {
     currentCountdownDuration, currentAudioStartTime, currentBpmAnalysis,
     customAudio, customAudioRef, defaultAudioRef, calculatePlaybackSpeed,
     setIsFullscreen, setCurrentRound, setCountdown, beginPlayback,
-    setIsAppearancePhase, setRevealedIndices
+    setIsAppearancePhase, setRevealedIndices, setIsFinished
   ])
 
   /**

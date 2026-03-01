@@ -8,6 +8,8 @@ const rateLimit = require('express-rate-limit');
 // Store for tracking rate limits (in production, use Redis)
 // For now, using in-memory store
 
+const isDev = process.env.NODE_ENV !== 'production';
+
 /**
  * General API rate limiter
  * 100 requests per minute per IP
@@ -42,9 +44,10 @@ const shareCreationLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => isDev,
   keyGenerator: (req) => {
-    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-           req.headers['x-real-ip'] || 
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+           req.headers['x-real-ip'] ||
            req.ip;
   },
   skipFailedRequests: false // Count failed requests too (prevents probing)

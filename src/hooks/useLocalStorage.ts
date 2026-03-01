@@ -297,11 +297,11 @@ export const shareApi = {
     }
   },
 
-  async getPublic(page: number = 1, limit: number = 20): Promise<PublicSharesResponse> {
+  async getPublic(page: number = 1, limit: number = 20, sort: 'popular' | 'newest' = 'popular'): Promise<PublicSharesResponse> {
     await ensureSession()
-    
+
     const response = await fetch(
-      `${API_BASE}/shares/public?page=${page}&limit=${limit}`,
+      `${API_BASE}/shares/public?page=${page}&limit=${limit}&sort=${sort}`,
       { credentials: 'include' }
     )
     

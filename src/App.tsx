@@ -64,6 +64,7 @@ function App() {
   // ==========================================================================
   
   const [isPlaying, setIsPlaying] = useState(false)
+  const [communityRefreshKey, setCommunityRefreshKey] = useState(0)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
   const [currentRound, setCurrentRound] = useState(0)
@@ -134,7 +135,7 @@ function App() {
     const hasCustomAudio = customAudio !== null
     const difficultyChanged = currentDifficulty !== 'medium'
     const bpmChanged = currentBpm !== DEFAULT_BPM
-    const roundsChanged = currentRounds !== 3
+    const roundsChanged = currentRounds !== 5
     const speedSettingsChanged = currentIncreaseSpeed !== false
 
     return contentPoolChanged || hasCustomAudio || difficultyChanged || bpmChanged || roundsChanged || speedSettingsChanged
@@ -232,7 +233,7 @@ function App() {
 
   const handleShareClick = () => {
     if (!hasCustomizations) {
-      toast.error('Customize your game first before sharing!')
+      toast.info('Customize something to share')
       return
     }
     setShareModalOpen(true)
@@ -277,7 +278,7 @@ function App() {
   // ==========================================================================
   
   return (
-    <div className="min-h-screen p-4 md:p-8">
+    <div className="p-4 md:px-8 md:py-4">
       <Toaster position="bottom-left" offset="24px" />
       
       {/* Fullscreen Playback Overlay */}
@@ -293,6 +294,8 @@ function App() {
         revealedIndices={revealedIndices}
         isAppearancePhase={isAppearancePhase}
         onStop={stopBeat}
+        onRestart={startBeat}
+        onShare={() => { setIsFullscreen(false); handleShareClick() }}
       />
       
       {/* Main Content */}
@@ -347,13 +350,13 @@ function App() {
           
           {/* Desktop: Community Games Sidebar */}
           <div className="hidden xl:block w-[360px] shrink-0 h-[calc(100vh-280px)] sticky top-8">
-            <PublicGamesPanel onLoadGame={loadPublicGame} />
+            <PublicGamesPanel onLoadGame={loadPublicGame} refreshKey={communityRefreshKey} />
           </div>
         </div>
-        
+
         {/* Mobile: Community Games (below settings) */}
         <div className="xl:hidden">
-          <PublicGamesPanel onLoadGame={loadPublicGame} />
+          <PublicGamesPanel onLoadGame={loadPublicGame} refreshKey={communityRefreshKey} />
         </div>
 
         {/* Footer */}
@@ -393,12 +396,15 @@ function App() {
         open={shareModalOpen}
         onOpenChange={setShareModalOpen}
         onGenerateShare={generateShareLink}
+        hasContent={currentContentPool.length > 0}
+        onPublicShare={() => setCommunityRefreshKey(k => k + 1)}
       />
 
       {/* Floating Action Menu */}
       {!isFullscreen && (
         <FloatingMenu
           isPlaying={isPlaying}
+          hasCustomizations={hasCustomizations}
           onPlayPause={handlePlayPause}
           onShareClick={handleShareClick}
           onResetClick={handleResetClick}

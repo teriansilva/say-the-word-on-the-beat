@@ -17,9 +17,11 @@ A playful, interactive web platform that recreates the viral "Say the Word on Be
 - **⏰ Audio Start Time**: Set custom start position based on actual audio length
 - **⏱️ Countdown Duration**: Configurable countdown before game starts
 - **🎉 Completion Celebration**: Animated finish screen with confetti and celebration sound
-- **🌐 Community Games**: Browse and play publicly shared games from other users
+- **🌐 Community Games**: Browse and play publicly shared games from other users, sorted by Popular or Newest
 - **❤️ Like System**: Like and discover popular community games
-- **🔗 Share Links**: Generate shareable URLs encoding your complete game configuration
+- **🔗 Share Links**: Generate shareable URLs for your game configuration (private or public)
+- **📲 Social Sharing**: Each public game gets a `/share/<guid>` URL with full Open Graph / Twitter Card meta tags so previews render correctly on social media
+- **🎉 Post-game Share**: Share button appears on the completion screen so you can share right after finishing
 - **🔄 Reset**: One-click reset to restore all settings to defaults
 - **⚡ Debounced Controls**: Smooth slider interactions with rate-limit-friendly persistence
 
@@ -126,8 +128,8 @@ See [DOCKER.md](DOCKER.md) for complete Docker deployment documentation.
 1. **Build Your Grid**: Click on cards to add emojis or upload custom images
 2. **Set the Beat**: Adjust BPM or upload custom audio for automatic tempo detection
 3. **Play & Practice**: Hit play to see the beat indicator highlight each card in rhythm
-4. **Share Your Creation**: Generate a link to share, or publish to the community
-5. **Browse Community**: Discover and play games created by others
+4. **Share Your Creation**: Generate a private link or publish publicly to the community (requires at least one content item for public sharing)
+5. **Browse Community**: Discover and play games created by others — sort by most popular or newest, and share any community game directly to social media
 
 ## 🎯 Project Structure
 

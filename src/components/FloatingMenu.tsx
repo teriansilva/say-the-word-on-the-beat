@@ -16,12 +16,13 @@ import {
 
 interface FloatingMenuProps {
   isPlaying: boolean
+  hasCustomizations: boolean
   onPlayPause: () => void
   onShareClick: () => void
   onResetClick: () => void
 }
 
-export function FloatingMenu({ isPlaying, onPlayPause, onShareClick, onResetClick }: FloatingMenuProps) {
+export function FloatingMenu({ isPlaying, hasCustomizations, onPlayPause, onShareClick, onResetClick }: FloatingMenuProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
   return (
@@ -59,7 +60,7 @@ export function FloatingMenu({ isPlaying, onPlayPause, onShareClick, onResetClic
             <Button
               size="lg"
               variant="secondary"
-              className="h-12 w-12 rounded-xl p-0"
+              className={`h-12 w-12 rounded-xl p-0 transition-opacity${!hasCustomizations ? ' opacity-40 cursor-not-allowed' : ''}`}
               onClick={onShareClick}
             >
               <ShareNetwork size={24} weight="fill" />

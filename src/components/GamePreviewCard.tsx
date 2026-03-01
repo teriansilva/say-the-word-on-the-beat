@@ -1,8 +1,10 @@
+import { useRef, useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Heart, MusicNote, Play, Timer } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import type { PublicShare } from '@/hooks/useLocalStorage'
 
 interface GamePreviewCardProps {
@@ -12,24 +14,85 @@ interface GamePreviewCardProps {
   isLiking?: boolean
 }
 
+/** Renders an image tile only after the card becomes visible in the scroll area. */
+function LazyImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [loaded, setLoaded] = useState(false)
+  const [visible, setVisible] = useState(false)
+  const ref = useRef<HTMLImageElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '100px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <img
+      ref={ref}
+      src={visible ? src : undefined}
+      alt={alt}
+      className={cn(className, !loaded && 'opacity-0', loaded && 'opacity-100 transition-opacity duration-200')}
+      onLoad={() => setLoaded(true)}
+    />
+  )
+}
+
+async function handleShare(guid: string, title: string) {
+  const url = `${window.location.origin}/share/${guid}`
+  const shareTitle = title || 'Say the Word on Beat - Custom Game'
+  const text = `Play "${shareTitle}" on Say the Word on Beat!`
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: shareTitle, text, url })
+    } catch (err) {
+      // User cancelled or browser denied — fall through to clipboard
+      if ((err as DOMException).name !== 'AbortError') {
+        await copyToClipboard(url)
+      }
+    }
+  } else {
+    await copyToClipboard(url)
+  }
+}
+
+async function copyToClipboard(url: string) {
+  try {
+    await navigator.clipboard.writeText(url)
+    toast.success('Share link copied!')
+  } catch {
+    toast.error('Could not copy link')
+  }
+}
+
 export function GamePreviewCard({ share, onLike, onLoad, isLiking }: GamePreviewCardProps) {
   const { preview, title, likes, hasLiked, guid } = share
-  
+
   // Get up to 4 content items for the preview grid
   const previewItems = preview?.contentItems?.slice(0, 4) || []
-  
+
   // Format difficulty display
   const difficultyColors: Record<string, string> = {
     easy: 'bg-green-500/20 text-green-700 dark:text-green-400',
     medium: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400',
     hard: 'bg-red-500/20 text-red-700 dark:text-red-400'
   }
-  
+
   const formattedDate = new Date(share.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric'
   })
-  
+
   return (
     <Card className="p-3 border-2 hover:border-primary/50 transition-colors group">
       {/* Title + Preview Row */}
@@ -41,16 +104,16 @@ export function GamePreviewCard({ share, onLike, onLoad, isLiking }: GamePreview
             return (
               <div
                 key={index}
-                className="w-10 h-10 flex items-center justify-center bg-muted/50 border border-border/50 rounded-sm"
+                className="w-10 h-10 flex items-center justify-center bg-muted/50 border border-border/50 rounded-sm overflow-hidden"
               >
                 {item ? (
                   item.type === 'emoji' ? (
                     <span className="text-lg">{item.content}</span>
                   ) : (
-                    <img
+                    <LazyImage
                       src={item.content}
                       alt=""
-                      className="w-full h-full object-cover rounded-sm"
+                      className="w-full h-full object-cover"
                     />
                   )
                 ) : (
@@ -60,7 +123,7 @@ export function GamePreviewCard({ share, onLike, onLoad, isLiking }: GamePreview
             )
           })}
         </div>
-        
+
         {/* Title */}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm text-foreground line-clamp-1">
@@ -69,15 +132,15 @@ export function GamePreviewCard({ share, onLike, onLoad, isLiking }: GamePreview
           <span className="text-xs text-muted-foreground">{formattedDate}</span>
         </div>
       </div>
-      
+
       {/* Stats Row */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <Badge variant="secondary" className="text-xs gap-1">
           <Timer size={12} weight="bold" />
           {preview?.rounds || 3} rounds
         </Badge>
-        <Badge 
-          variant="secondary" 
+        <Badge
+          variant="secondary"
           className={cn('text-xs capitalize', difficultyColors[preview?.difficulty || 'medium'])}
         >
           {preview?.difficulty || 'medium'}
@@ -89,7 +152,7 @@ export function GamePreviewCard({ share, onLike, onLoad, isLiking }: GamePreview
           </Badge>
         )}
       </div>
-      
+
       {/* Actions */}
       <div className="flex items-center gap-2">
         <Button
@@ -102,14 +165,24 @@ export function GamePreviewCard({ share, onLike, onLoad, isLiking }: GamePreview
           onClick={() => onLike(guid)}
           disabled={isLiking}
         >
-          <Heart 
-            size={16} 
-            weight={hasLiked ? 'fill' : 'regular'} 
-            className={hasLiked ? 'text-red-500' : ''} 
+          <Heart
+            size={16}
+            weight={hasLiked ? 'fill' : 'regular'}
+            className={hasLiked ? 'text-red-500' : ''}
           />
           <span className="font-medium">{likes}</span>
         </Button>
-        
+
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 w-8 p-0 shrink-0"
+          onClick={() => handleShare(guid, title)}
+          title="Share this game"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 256 256"><path d="M212,200a36,36,0,1,1-69.85-12.25l-53-34.05a36,36,0,1,1,0-51.4l53-34a36.09,36.09,0,1,1,8.67,13.45l-53,34.05a36,36,0,0,1,0,24.5l53,34.05A36,36,0,0,1,212,200Z"></path></svg>
+        </Button>
+
         <Button
           size="sm"
           className="h-8 gap-1.5 flex-1"

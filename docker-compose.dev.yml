@@ -35,6 +35,7 @@ services:
       - CORS_ORIGIN=http://localhost:8091
       - DEBUG=express:*
       - STALE_DAYS=7  # Days before unused games are cleaned up
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
     volumes:
       - ./server/src:/app/src:ro  # Mount source for easier debugging (read-only)
       - api-logs:/var/log  # Persist cleanup logs

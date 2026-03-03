@@ -23,6 +23,7 @@ import { FullscreenPlayback } from '@/components/FullscreenPlayback'
 import { FloatingMenu } from '@/components/FloatingMenu'
 import { PublicGamesPanel } from '@/components/PublicGamesPanel'
 import { ShareModal } from '@/components/ShareModal'
+import { AdminDashboard } from '@/components/AdminDashboard'
 
 import { generateGridFromPool } from '@/lib/gridGenerator'
 import { DEFAULT_CONTENT_POOL, DEFAULT_BPM } from '@/lib/constants'
@@ -39,6 +40,18 @@ import completeSound from '@/assets/audio/cheer.mp3'
 // ============================================================================
 
 function App() {
+  // Check for admin mode via URL param (?admin)
+  const isAdminMode = new URLSearchParams(window.location.search).has('admin')
+
+  if (isAdminMode) {
+    return (
+      <>
+        <Toaster position="bottom-left" offset="24px" />
+        <AdminDashboard />
+      </>
+    )
+  }
+
   // ==========================================================================
   // Persistent State (survives page reload)
   // ==========================================================================
@@ -317,6 +330,9 @@ function App() {
             }}
           >
             ON THE BEAT
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Build your own beat-synced word party game and share it with friends!
           </p>
         </header>
 

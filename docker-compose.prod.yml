@@ -40,6 +40,7 @@ services:
       - MONGODB_URI=mongodb://mongo:27017/saytheword
       - CORS_ORIGIN=https://saywordsonbeat.com
       - STALE_DAYS=7  # Days before unused games are cleaned up
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     volumes:
       - api-logs:/var/log  # Persist cleanup logs
     depends_on:

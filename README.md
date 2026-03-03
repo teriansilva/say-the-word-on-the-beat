@@ -24,6 +24,7 @@ A playful, interactive web platform that recreates the viral "Say the Word on Be
 - **🎉 Post-game Share**: Share button appears on the completion screen so you can share right after finishing
 - **🔄 Reset**: One-click reset to restore all settings to defaults
 - **⚡ Debounced Controls**: Smooth slider interactions with rate-limit-friendly persistence
+- **🔒 Admin Dashboard**: Password-protected admin panel to monitor sessions, manage shares, flag spam, and toggle visibility
 
 ## 👀 Demo
 See the platform live here: **[saywordsonbeat.com](https://saywordsonbeat.com/)**
@@ -111,6 +112,32 @@ docker exec say-the-word-api sh -c "MONGODB_URI=mongodb://mongo:27017/saytheword
 
 See [DOCKER.md](DOCKER.md) for complete Docker deployment documentation.
 
+### 🔒 Admin Dashboard
+
+A password-protected admin panel is available for managing game sessions and shared games.
+
+**Access:** Navigate to `/?admin` (e.g., `http://localhost:8091/?admin` in dev).
+
+**Features:**
+- Overview stats (sessions, shares, images, audio files)
+- Browse and filter sessions (active vs stale)
+- Browse, search, sort, and filter shares (public/private)
+- Load any shared game in a new tab
+- Toggle share visibility (public ↔ private)
+- Flag shares as spam
+- Delete individual sessions or shares (with confirmation)
+
+**Configuration:**
+
+Set the `ADMIN_PASSWORD` environment variable on the API service:
+
+| Environment | Default | How to set |
+|-------------|---------|------------|
+| Development | `admin` | Pre-configured in `docker-compose.dev.yml` |
+| Production  | *(none — must be set)* | Set `ADMIN_PASSWORD` in your environment or `.env` file |
+
+The admin API uses Bearer token authentication — the dashboard sends `Authorization: Bearer <password>` with each request.
+
 ## 🛠️ Tech Stack
 
 - **Frontend Framework**: React 19 with TypeScript
@@ -144,7 +171,7 @@ say-the-word-on-beat/
 │   └── src/
 │       ├── models/         # MongoDB models
 │       ├── routes/         # Express routes
-│       ├── middleware/     # Express middleware
+│       ├── middleware/     # Express middleware (session, rate-limit, admin auth)
 │       └── tasks/          # Scheduled tasks (cleanup)
 ├── public/                 # Static assets
 ├── docker-compose.dev.yml  # Development Docker config

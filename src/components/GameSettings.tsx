@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ContentPoolManager, type ContentPoolItem } from '@/components/ContentPoolManager'
 import { AudioUploader } from '@/components/AudioUploader'
+import { PencilLine } from '@phosphor-icons/react'
 import type { BpmAnalysisResult } from '@/lib/bpmAnalyzer'
 import type { Difficulty } from '@/lib/types'
 
@@ -251,6 +252,11 @@ export function GameSettings({
 }: GameSettingsProps) {
   return (
     <div className="flex-1 min-w-0 space-y-6 bg-card p-6 rounded-2xl border-2 border-border shadow-sm">
+      <div className="flex items-center gap-2">
+        <PencilLine size={20} weight="bold" className="text-primary" />
+        <h2 className="font-bold text-lg">Create Your Game</h2>
+      </div>
+
       <ContentPoolManager
         items={contentPool}
         onItemsChange={onContentPoolChange}

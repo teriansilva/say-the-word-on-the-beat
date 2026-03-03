@@ -336,9 +336,14 @@ function App() {
           </p>
         </header>
 
-        {/* Two-column Layout: Settings + Community Games */}
+        {/* Two-column Layout: Community Games + Game Editor */}
         <div className="flex flex-col xl:flex-row gap-6">
-          {/* Settings Panel */}
+          {/* Community Games Sidebar (left on desktop, top on mobile) */}
+          <div className="xl:w-[360px] shrink-0 xl:h-[calc(100vh-280px)] xl:sticky xl:top-8">
+            <PublicGamesPanel onLoadGame={loadPublicGame} refreshKey={communityRefreshKey} />
+          </div>
+
+          {/* Game Editor */}
           <GameSettings
             contentPool={currentContentPool}
             onContentPoolChange={setContentPool}
@@ -363,16 +368,6 @@ function App() {
             onCountdownDurationChange={setLocalCountdown}
             isPlaying={isPlaying}
           />
-          
-          {/* Desktop: Community Games Sidebar */}
-          <div className="hidden xl:block w-[360px] shrink-0 h-[calc(100vh-280px)] sticky top-8">
-            <PublicGamesPanel onLoadGame={loadPublicGame} refreshKey={communityRefreshKey} />
-          </div>
-        </div>
-
-        {/* Mobile: Community Games (below settings) */}
-        <div className="xl:hidden">
-          <PublicGamesPanel onLoadGame={loadPublicGame} refreshKey={communityRefreshKey} />
         </div>
 
         {/* Footer */}

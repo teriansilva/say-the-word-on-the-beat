@@ -22,4 +22,13 @@ export default defineConfig({
       '@': resolve(projectRoot, 'src')
     }
   },
+  build: {
+    rollupOptions: {
+      // The game, plus the static privacy page served at /privacy (#1348).
+      input: {
+        main: resolve(projectRoot, 'index.html'),
+        privacy: resolve(projectRoot, 'privacy.html'),
+      },
+    },
+  },
 });

@@ -9,6 +9,7 @@ const imagesRouter = require('./routes/images');
 const audioRouter = require('./routes/audio');
 const sharesRouter = require('./routes/shares');
 const adminRouter = require('./routes/admin');
+const siteSettingsRouter = require('./routes/siteSettings');
 const Share = require('./models/Share');
 const { generalLimiter } = require('./middleware/rateLimit');
 
@@ -38,6 +39,7 @@ app.use('/api/images', imagesRouter);
 app.use('/api/audio', audioRouter);
 app.use('/api/shares', sharesRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/site-settings', siteSettingsRouter);
 
 // Health check (not rate limited)
 app.get('/api/health', (req, res) => {

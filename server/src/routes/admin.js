@@ -5,6 +5,7 @@ const AudioFile = require('../models/AudioFile');
 const Image = require('../models/Image');
 const Setting = require('../models/Setting');
 const { requireAdmin } = require('../middleware/adminAuth');
+const { SITE_SETTING_DEFAULTS, readSiteSettings, writeSiteSetting } = require('../siteSettings');
 
 const router = express.Router();
 
@@ -265,6 +266,39 @@ router.patch('/shares/:guid/visibility', async (req, res) => {
   } catch (err) {
     console.error('Admin toggle visibility error:', err);
     res.status(500).json({ error: 'Failed to toggle visibility' });
+  }
+});
+
+// ============================================================================
+// Site settings
+// ============================================================================
+
+router.get('/site-settings', async (req, res) => {
+  try {
+    res.json(await readSiteSettings());
+  } catch (err) {
+    console.error('Admin site settings read error:', err);
+    res.status(500).json({ error: 'Failed to read site settings' });
+  }
+});
+
+// PUT /api/admin/site-settings/:key  body: { value }
+// Only known keys, and only a value of the default's type.
+router.put('/site-settings/:key', async (req, res) => {
+  try {
+    const { key } = req.params;
+    if (!Object.prototype.hasOwnProperty.call(SITE_SETTING_DEFAULTS, key)) {
+      return res.status(404).json({ error: 'Unknown setting' });
+    }
+    const value = req.body?.value;
+    if (typeof value !== typeof SITE_SETTING_DEFAULTS[key]) {
+      return res.status(400).json({ error: `Setting ${key} must be a ${typeof SITE_SETTING_DEFAULTS[key]}` });
+    }
+    await writeSiteSetting(key, value);
+    res.json(await readSiteSettings());
+  } catch (err) {
+    console.error('Admin site settings write error:', err);
+    res.status(500).json({ error: 'Failed to save site setting' });
   }
 });
 

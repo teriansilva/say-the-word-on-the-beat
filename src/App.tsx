@@ -24,6 +24,14 @@ import { FloatingMenu } from '@/components/FloatingMenu'
 import { PublicGamesPanel } from '@/components/PublicGamesPanel'
 import { ShareModal } from '@/components/ShareModal'
 import { AdminDashboard } from '@/components/AdminDashboard'
+import { ConsentBanner } from '@/components/ConsentBanner'
+import { PromoStrip } from '@/components/PromoStrip'
+import { usePromo } from '@/hooks/usePromo'
+import { usePromoEnabled } from '@/hooks/usePromoEnabled'
+import { useAnyDialogOpen } from '@/hooks/useAnyDialogOpen'
+import { useAnalyticsConsent, usePrivacySettingsOpen } from '@/lib/use-consent.js'
+import { openPrivacySettings } from '@/lib/consent.js'
+import { FOOTER_COPY } from '@/lib/copy'
 
 import { generateGridFromPool } from '@/lib/gridGenerator'
 import { DEFAULT_CONTENT_POOL, DEFAULT_BPM } from '@/lib/constants'
@@ -87,6 +95,8 @@ function App() {
   const [displayBpm, setDisplayBpm] = useState<number>(DEFAULT_BPM)
   const [isFinished, setIsFinished] = useState(false)
   const [isAppearancePhase, setIsAppearancePhase] = useState(false)
+  // gameplayce.io#1348: a round reached the completion screen during this visit.
+  const [finishedRound, setFinishedRound] = useState(false)
 
   // ==========================================================================
   // Audio Refs
@@ -286,6 +296,28 @@ function App() {
     setGridItems(newGrid)
   }, [currentDifficulty, currentContentPool, setGridItems])
 
+  useEffect(() => {
+    if (isFinished) setFinishedRound(true)
+  }, [isFinished])
+
+  // gameplayce.io#1348: consent banner + Gameplayce promo. The promo waits until the
+  // visitor has engaged and nothing else is on screen (rules: lib/promo.ts).
+  const consent = useAnalyticsConsent()
+  const privacySettingsOpen = usePrivacySettingsOpen()
+  const anyDialogOpen = useAnyDialogOpen()
+  const promoEnabled = usePromoEnabled()
+  const promo = usePromo({
+    enabled: promoEnabled,
+    // Only once the visitor is back from the full-screen player.
+    finishedRound: finishedRound && !isFullscreen,
+    isPlaying,
+    blockers: {
+      consentBannerVisible: consent === 'unset' || privacySettingsOpen,
+      playbackVisible: isFullscreen,
+      dialogOpen: shareModalOpen || anyDialogOpen,
+    },
+  })
+
   // ==========================================================================
   // Render
   // ==========================================================================
@@ -335,6 +367,8 @@ function App() {
             Build your own beat-synced word party game and share it with friends!
           </p>
         </header>
+
+        {promo.visible && <PromoStrip onDismiss={promo.dismiss} onClick={promo.click} />}
 
         {/* Two-column Layout: Community Games + Game Editor */}
         <div className="flex flex-col xl:flex-row gap-6">
@@ -392,6 +426,19 @@ function App() {
               🐙 GitHub
             </a>
           </p>
+          <p data-testid="privacy-footer">
+            <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">{FOOTER_COPY.privacy}</a>
+            {' · '}
+            <a href="/privacy#legal" className="underline underline-offset-2 hover:text-foreground">{FOOTER_COPY.legal}</a>
+            {' · '}
+            <button
+              type="button"
+              onClick={openPrivacySettings}
+              className="underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 rounded"
+            >
+              {FOOTER_COPY.settings}
+            </button>
+          </p>
         </footer>
       </div>
 
@@ -410,6 +457,9 @@ function App() {
         hasContent={currentContentPool.length > 0}
         onPublicShare={() => setCommunityRefreshKey(k => k + 1)}
       />
+
+      {/* Analytics consent (gameplayce.io#1348) — never over the full-screen player */}
+      <ConsentBanner suppressed={isFullscreen} />
 
       {/* Floating Action Menu */}
       {!isFullscreen && (

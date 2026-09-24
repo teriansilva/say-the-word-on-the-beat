@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Switch } from '@/components/ui/switch'
 import {
   Trash, ArrowSquareOut, Eye, EyeSlash,
   Flag, MagnifyingGlass, ArrowLeft, ShieldCheck,
@@ -600,6 +601,65 @@ function SharesPanel({
 }
 
 // ============================================================================
+// Site settings
+// ============================================================================
+
+interface SiteSettings {
+  promoEnabled: boolean
+}
+
+function SettingsPanel({ password }: { password: string }) {
+  const [settings, setSettings] = useState<SiteSettings | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    adminFetch<SiteSettings>('/site-settings', password)
+      .then(setSettings)
+      .catch((err) => toast.error((err as Error).message))
+  }, [password])
+
+  const setPromoEnabled = async (value: boolean) => {
+    setSaving(true)
+    try {
+      const next = await adminFetch<SiteSettings>('/site-settings/promoEnabled', password, {
+        method: 'PUT',
+        body: JSON.stringify({ value }),
+      })
+      setSettings(next)
+      toast.success(value ? 'Gameplayce hint switched on' : 'Gameplayce hint switched off')
+    } catch (err) {
+      toast.error((err as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <label htmlFor="setting-promo" className="font-semibold">
+            Gameplayce hint
+          </label>
+          <p className="text-sm text-muted-foreground mt-1">
+            The small &ldquo;Make your own rounds with AI&rdquo; strip that points players to Say the
+            Word on Beat on gameplayce.io. It shows only after a finished round (or 90&nbsp;s on the
+            page), at most once per visit. Switching it off hides it for everyone right away.
+          </p>
+        </div>
+        <Switch
+          id="setting-promo"
+          data-testid="setting-promo"
+          checked={settings?.promoEnabled ?? false}
+          disabled={!settings || saving}
+          onCheckedChange={setPromoEnabled}
+        />
+      </div>
+    </Card>
+  )
+}
+
+// ============================================================================
 // Main Admin Dashboard
 // ============================================================================
 
@@ -746,11 +806,12 @@ export function AdminDashboard() {
 
         {/* Tabbed content */}
         <Tabs defaultValue="shares">
-          <TabsList className="w-full justify-start">
+          <TabsList className="w-full justify-start flex-wrap h-auto">
             <TabsTrigger value="shares">🎮 All Shares</TabsTrigger>
             <TabsTrigger value="public">🌐 Public Games</TabsTrigger>
             <TabsTrigger value="private">🔒 Private Games</TabsTrigger>
             <TabsTrigger value="sessions">👤 Sessions</TabsTrigger>
+            <TabsTrigger value="settings">⚙️ Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="shares" className="mt-4">
@@ -767,6 +828,10 @@ export function AdminDashboard() {
 
           <TabsContent value="sessions" className="mt-4">
             <SessionsPanel password={password} />
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-4">
+            <SettingsPanel password={password} />
           </TabsContent>
         </Tabs>
       </div>

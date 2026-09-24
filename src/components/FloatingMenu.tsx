@@ -26,7 +26,7 @@ export function FloatingMenu({ isPlaying, hasCustomizations, onPlayPause, onShar
   const [isExpanded, setIsExpanded] = useState(true)
 
   return (
-    <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center gap-3">
+    <div className="floating-menu fixed bottom-8 right-8 z-50 flex flex-col items-center gap-3">
       <AnimatePresence>
         {isExpanded && (
           <motion.div

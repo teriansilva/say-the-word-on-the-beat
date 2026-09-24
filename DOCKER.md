@@ -39,6 +39,32 @@ npm run docker:prod
 docker-compose -f docker-compose.prod.yml up -d --build --force-recreate
 ```
 
+#### Updating the live site (saywordsonbeat.com)
+
+Use Compose **v2** (`docker compose`), not the legacy `docker-compose` 1.29. On
+current Docker Engine, 1.29 crashes while recreating a container
+(`KeyError: 'ContainerConfig'`) after it has already stopped the old one, which
+takes the service down. Rebuild and recreate only the app containers, so MongoDB
+and its volume are never touched:
+
+```bash
+cd ~/saywordsonbeat.com/say-the-word-on-beat
+git fetch origin && git merge --ff-only origin/main
+# rollback point first
+docker tag say-the-word-on-beat-web:latest say-the-word-on-beat-web:rollback-$(date +%F)
+docker tag say-the-word-on-beat-api:latest say-the-word-on-beat-api:rollback-$(date +%F)
+docker compose -p say-the-word-on-beat -f docker-compose.prod.yml build web api
+docker compose -p say-the-word-on-beat -f docker-compose.prod.yml up -d --no-deps web api --dry-run   # expect only web + api
+docker compose -p say-the-word-on-beat -f docker-compose.prod.yml up -d --no-deps web api
+```
+
+`-p say-the-word-on-beat` keeps the project (and so the network
+`say-the-word-on-beat_app-network` and the volumes) the existing containers
+belong to. Compose v2 names images `say-the-word-on-beat-web` / `-api` (dash);
+images built by 1.29 were `say-the-word-on-beat_web` / `_api` (underscore).
+Rollback: retag the rollback images as `:latest` and run the same `up` with
+`--no-build`.
+
 **Features:**
 - Health checks on all services
 - `restart: always` policy

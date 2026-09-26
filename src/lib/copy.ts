@@ -1,16 +1,17 @@
-// User-facing strings for the consent banner, the privacy footer and the
+// User-facing strings for the privacy settings panel, the privacy footer and the
 // Gameplayce promo (gameplayce.io#1348). English only for v1; kept in one place so a later
 // navigator.language switch (zh / vi / ru first, by traffic) needs no rewrite.
 
 export const CONSENT_COPY = {
   title: 'Anonymous analytics',
   body:
-    'May we count visits with our own, self-hosted analytics? The analytics sets no cookies and does no cross-site tracking — and nothing is sent unless you choose Accept. You can change this any time under Privacy settings.',
+    'We count visits with our own, self-hosted analytics. It sets no cookies, does no cross-site tracking and does not keep your IP address. You can switch it off here at any time.',
   policyLink: 'Privacy policy',
-  reject: 'Reject',
-  accept: 'Accept',
+  off: 'Off',
+  on: 'On',
   close: 'Close privacy settings',
-  current: (choice: 'granted' | 'denied') => `Currently: ${choice === 'granted' ? 'accepted' : 'rejected'}.`,
+  current: (choice: 'granted' | 'denied') => `Currently: ${choice === 'granted' ? 'on' : 'off'}.`,
+  gpc: "Your browser sends a Global Privacy Control signal, so analytics stays off for you either way.",
 } as const;
 
 export const FOOTER_COPY = {

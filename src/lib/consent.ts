@@ -1,23 +1,21 @@
-// Analytics consent (#1328).
+// Analytics choice (gameplayce.io#1328, switched to opt-out 2026-09-26).
 //
-// Umami is cookieless, but it is still a request to a second origin carrying
-// the visitor's IP, the page URL and the screen size, and the operator decided
-// it is OPT-IN: nothing is loaded, and nothing is sent, until the visitor
-// presses Accept. Reject is exactly as prominent and exactly as final.
+// Umami is self-hosted and cookieless. Since 2026-09-26 the operator counts
+// visits on the basis of legitimate interest (Art. 6(1)(f) GDPR): analytics is
+// ON by default and every visitor can switch it OFF. Nothing is tracked when
+//   - the visitor switched it off (stored choice 'denied', or Umami's own
+//     `umami.disabled` flag — set by the old opt-in banner's Reject), or
+//   - the browser sends Global Privacy Control (`navigator.globalPrivacyControl`).
+// So anyone who pressed Reject under the opt-in banner stays opted out; an old
+// Accept, no stored choice, garbage or unreadable storage all read as ON.
 //
-// The choice lives in localStorage — no new cookie — under `ANALYTICS_CONSENT_KEY`
-// as `'granted'` or `'denied'`; anything else (absent, garbage, unreadable
-// storage) is "not decided yet", which means: ask, and track nothing meanwhile.
+// The choice lives in localStorage — no cookie — under `ANALYTICS_CONSENT_KEY`,
+// mirrored into `umami.disabled`, which the v3 tracker re-reads before EVERY
+// send. That is what makes "Off" take effect immediately on a page where the
+// script is already running.
 //
-// It is mirrored into Umami's own opt-out flag, `umami.disabled`, which the v3
-// tracker re-reads before EVERY send. That is what makes "Stop" take effect
-// immediately on a page where the script is already running — there is no API
-// to unload a script, but there is one to make it send nothing.
-//
-// A tiny external store (not React context): the banner, the footer's "Privacy
-// settings" link, the /legal control and every `<Analytics />` mount (the
-// platform Layout and each game's GameRoot) must agree on the state without
-// sharing a provider, since the game routes are not under the Layout.
+// A tiny external store (not React context): the footer's "Privacy settings"
+// panel, the /privacy control and `<Analytics />` must agree on the state.
 
 export const ANALYTICS_CONSENT_KEY = 'gameplayce.analytics-consent';
 /** Umami v3's own per-browser opt-out; checked by the tracker before every send. */
@@ -37,12 +35,24 @@ function safeStorage(): Storage | undefined {
 
 export function readConsent(storage: Storage | undefined = safeStorage()): ConsentState {
   try {
-    const value = storage?.getItem(ANALYTICS_CONSENT_KEY);
-    return value === 'granted' || value === 'denied' ? value : 'unset';
+    if (storage?.getItem(ANALYTICS_CONSENT_KEY) === 'denied') return 'denied';
+    if (storage?.getItem(UMAMI_DISABLED_KEY)) return 'denied';
+    return 'granted';
   } catch {
-    // Unreadable storage cannot prove consent, so it is not consent.
-    return 'unset';
+    // Unreadable storage holds no opt-out we could honour: the default applies.
+    return 'granted';
   }
+}
+
+/** The browser's Global Privacy Control signal. */
+export function globalPrivacyControl(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true;
+}
+
+/** Whether this browser may be tracked right now: not switched off, no GPC. */
+export function trackingAllowed(): boolean {
+  return currentConsent() === 'granted' && !globalPrivacyControl();
 }
 
 type Listener = () => void;
@@ -174,7 +184,7 @@ export const BEFORE_SEND_HOOK = 'gameplayceUmamiBeforeSend';
  * hit. Also re-checks consent, belt and braces with `umami.disabled`.
  */
 export function beforeSend<T>(_type: string, payload: T): T | false {
-  if (currentConsent() !== 'granted') return false;
+  if (!trackingAllowed()) return false;
   if (isLikelyBot(browserSignals())) return false;
   return payload;
 }

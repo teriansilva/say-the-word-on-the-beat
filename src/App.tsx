@@ -29,7 +29,7 @@ import { PromoStrip } from '@/components/PromoStrip'
 import { usePromo } from '@/hooks/usePromo'
 import { usePromoEnabled } from '@/hooks/usePromoEnabled'
 import { useAnyDialogOpen } from '@/hooks/useAnyDialogOpen'
-import { useAnalyticsConsent, usePrivacySettingsOpen } from '@/lib/use-consent.js'
+import { usePrivacySettingsOpen } from '@/lib/use-consent.js'
 import { openPrivacySettings } from '@/lib/consent.js'
 import { FOOTER_COPY } from '@/lib/copy'
 
@@ -300,9 +300,8 @@ function App() {
     if (isFinished) setFinishedRound(true)
   }, [isFinished])
 
-  // gameplayce.io#1348: consent banner + Gameplayce promo. The promo waits until the
+  // gameplayce.io#1348: Gameplayce promo. The promo waits until the
   // visitor has engaged and nothing else is on screen (rules: lib/promo.ts).
-  const consent = useAnalyticsConsent()
   const privacySettingsOpen = usePrivacySettingsOpen()
   const anyDialogOpen = useAnyDialogOpen()
   const promoEnabled = usePromoEnabled()
@@ -312,7 +311,8 @@ function App() {
     finishedRound: finishedRound && !isFullscreen,
     isPlaying,
     blockers: {
-      consentBannerVisible: consent === 'unset' || privacySettingsOpen,
+      // The privacy settings panel (opt-out since 2026-09-26) is open.
+      consentBannerVisible: privacySettingsOpen,
       playbackVisible: isFullscreen,
       dialogOpen: shareModalOpen || anyDialogOpen,
     },
@@ -458,7 +458,7 @@ function App() {
         onPublicShare={() => setCommunityRefreshKey(k => k + 1)}
       />
 
-      {/* Analytics consent (gameplayce.io#1348) — never over the full-screen player */}
+      {/* Privacy settings: the analytics On/Off panel, opened from the footer */}
       <ConsentBanner suppressed={isFullscreen} />
 
       {/* Floating Action Menu */}

@@ -5,7 +5,7 @@
 // mounted next to it. Nothing is sent without
 // analytics consent — the tracker is not even loaded then, and the
 // before-send hook re-checks consent on every hit anyway.
-import { currentConsent } from './consent.js';
+import { trackingAllowed } from './consent.js';
 
 export const SITE_WEBSITE_ID = '9411ff1f-a13e-4671-a1e5-9f949e712b9e';
 
@@ -21,7 +21,7 @@ export function buildEventPayload(base: Payload, name: PromoEvent, data: Record<
 }
 
 export function trackPromo(name: PromoEvent, data: Record<string, string> = { variant: 'strip' }): void {
-  if (currentConsent() !== 'granted') return;
+  if (!trackingAllowed()) return;
   const umami = (window as unknown as { umami?: UmamiLike }).umami;
   if (!umami?.track) return;
   try {

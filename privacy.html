@@ -27,14 +27,14 @@
   <main class="wrap">
     <a class="back" href="/">&larr; Back to the game</a>
     <h1>Privacy</h1>
-    <p class="lede">Say the Word on Beat (saywordsonbeat.com) &middot; last updated <span data-policy-date>24 September 2026</span></p>
+    <p class="lede">Say the Word on Beat (saywordsonbeat.com) &middot; last updated <span data-policy-date>26 September 2026</span></p>
 
     <section class="card" aria-labelledby="in-short">
       <h2 id="in-short">In short</h2>
       <ul>
         <li>No account and no ads. We never sell your data. Games you choose to make public are visible to everyone.</li>
         <li>One anonymous session cookie keeps your games and uploads working.</li>
-        <li>Visit statistics only if you press Accept &mdash; you can change that <a href="#analytics">below</a>.</li>
+        <li>We count visits with our own cookieless analytics &mdash; you can switch that off <a href="#analytics">below</a>.</li>
         <li>Everything runs on servers we operate ourselves in the European Union. Nothing is loaded from Google or any other third party.</li>
       </ul>
     </section>
@@ -46,9 +46,9 @@
 
     <section class="card" aria-labelledby="analytics">
       <h2 id="analytics">Analytics</h2>
-      <p>If you press Accept, we count visits with Umami, running on our own server (analytics.superstatus.io). It sets no cookies and stores no identifier on your device. It receives the page address, the referring page, your screen size, language and browser, and a few interface events (for example &ldquo;suggestion closed&rdquo;). Your IP address is used only for the moment it takes to work out a country and an anonymous visit ID that is reset every month &mdash; the address itself is not stored. Nothing is loaded or sent until you choose, and we filter out automated browsers as far as we can recognise them (this is a best guess: it can also skip a real visitor). Legal basis: your consent, Art. 6(1)(a) GDPR, which you can withdraw at any time.</p>
+      <p>We count visits with Umami, a self-hosted, cookieless analytics tool on our own server. It sets no cookies, stores nothing on your device (except remembering your choice if you switch analytics off), and does not keep your IP address. It records the page, referrer, browser, device type, screen size, language and country, plus a few interface events (for example when the Gameplayce suggestion is closed). Legal basis: our legitimate interest in understanding how the site is used (Art. 6(1)(f) GDPR). You can switch it off at any time under Privacy settings, and we honour your browser&rsquo;s Global Privacy Control signal. We also filter out automated browsers as far as we can recognise them.</p>
       <div class="state" data-testid="privacy-state">
-        <span>Your current choice: <b data-consent-state>Not decided</b></span>
+        <span>Analytics for you: <b data-consent-state>On</b></span>
         <button type="button" class="btn" data-open-consent>Change my choice</button>
       </div>
       <noscript><p>Changing your choice needs JavaScript. Without it, nothing is ever sent.</p></noscript>
@@ -67,13 +67,13 @@
           <tr><td data-l="What">Web server access logs: IP address, time, page requested, browser</td><td data-l="Why">To run the site, keep it secure and stop abuse <span class="chip">legitimate interest</span></td><td data-l="How long">No fixed deletion period yet</td></tr>
         </tbody>
       </table>
-      <p>Legal bases under Art. 6(1) GDPR: <strong>legitimate interest</strong> &mdash; running a safe, working game (f); <strong>consent</strong> &mdash; only analytics (a). Cookies and local storage that the game needs to work are allowed without consent (&sect; 25(2) TDDDG).</p>
+      <p>Legal basis under Art. 6(1) GDPR: <strong>legitimate interest</strong> (f) &mdash; running a safe, working game and understanding how it is used. Cookies and local storage that the game needs to work are allowed without consent (&sect; 25(2) TDDDG).</p>
       <p>We do not sell or rent personal data and do not share it with advertisers. Games you publish are visible to everyone. Anyone holding a game&rsquo;s share link can open it, and signed-in gameplayce.io players can copy it into their own account there (gameplayce.io is run by the same operator; only the game is copied, nothing about you). Our servers are backed up as a whole, so deleted data can remain in backups until they are overwritten.</p>
     </section>
 
     <section class="card" aria-labelledby="your-rights">
       <h2 id="your-rights">Your rights</h2>
-      <p>Under the GDPR you can ask us to tell you what we hold about you and give you a copy (Art. 15, 20), correct it (Art. 16), delete it (Art. 17), restrict its use (Art. 18) or object to uses based on legitimate interest (Art. 21), and you can withdraw consent at any time with effect from then on (Art. 7(3)). Because there are no accounts, tell us which game or share link your request is about. Write to <a href="mailto:marcusbraun@live.com">marcusbraun@live.com</a> &mdash; we answer within one month.</p>
+      <p>Under the GDPR you can ask us to tell you what we hold about you and give you a copy (Art. 15, 20), correct it (Art. 16), delete it (Art. 17), restrict its use (Art. 18) or object to uses based on legitimate interest (Art. 21), and you can switch analytics off at any time under Privacy settings. Because there are no accounts, tell us which game or share link your request is about. Write to <a href="mailto:marcusbraun@live.com">marcusbraun@live.com</a> &mdash; we answer within one month.</p>
       <p>You also have the right to complain to a data protection authority &mdash; for us, the State Commissioner for Data Protection and Freedom of Information of the Free Hanseatic City of Bremen, or the authority where you live or work.</p>
     </section>
 
@@ -101,8 +101,8 @@ This site is operated privately and non-commercially.</p>
       <p class="current" data-consent-current></p>
     </div>
     <div class="acts">
-      <button type="button" class="btn" data-consent="denied">Reject</button>
-      <button type="button" class="btn" data-consent="granted">Accept</button>
+      <button type="button" class="btn" data-consent="denied">Off</button>
+      <button type="button" class="btn" data-consent="granted">On</button>
       <button type="button" class="x" data-consent-close aria-label="Close privacy settings">&times;</button>
     </div>
   </section>

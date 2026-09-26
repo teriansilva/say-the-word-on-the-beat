@@ -1,25 +1,25 @@
 import { useEffect } from 'react'
-import { BEFORE_SEND_HOOK, installBeforeSendHook } from '@/lib/consent.js'
+import { BEFORE_SEND_HOOK, globalPrivacyControl, installBeforeSendHook } from '@/lib/consent.js'
 import { useAnalyticsConsent } from '@/lib/use-consent.js'
 import { SITE_WEBSITE_ID } from '@/lib/track'
 
 const ANALYTICS_SCRIPT_URL = 'https://analytics.superstatus.io/script.js'
 
 /**
- * Umami tracker, opt-in (gameplayce.io#1348, mirroring the platform's gameplayce.io#1328).
+ * Umami tracker, opt-out (legitimate interest, 2026-09-26).
  *
- * The script is not even requested until the visitor presses Accept. Reject
- * (or no answer) means no request to the analytics origin at all. A later
- * withdrawal cannot unload a script, so it is covered by `umami.disabled`
- * (re-read by the tracker before every send) plus the before-send hook, which
- * also drops likely bots.
+ * Loaded by default. Not requested at all when the visitor has switched
+ * analytics off (Privacy settings, or an old Reject) or the browser sends
+ * Global Privacy Control. Switching off later cannot unload a script, so that
+ * is covered by `umami.disabled` (re-read by the tracker before every send)
+ * plus the before-send hook, which also drops likely bots.
  */
 export function Analytics({ websiteId = SITE_WEBSITE_ID }: { websiteId?: string } = {}) {
   const consent = useAnalyticsConsent()
 
   useEffect(() => {
     if (!import.meta.env.PROD) return
-    if (consent !== 'granted') return
+    if (consent !== 'granted' || globalPrivacyControl()) return
 
     const existing = document.querySelector(
       `script[src="${ANALYTICS_SCRIPT_URL}"][data-website-id="${websiteId}"]`,

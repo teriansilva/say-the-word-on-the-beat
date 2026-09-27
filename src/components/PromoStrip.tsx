@@ -5,8 +5,8 @@ import { PROMO_URL } from '@/lib/promo'
 /**
  * Gameplayce promo, variant A (gameplayce.io#1348): an in-flow strip under the hero.
  * Not fixed, not floating, not a dialog — it covers nothing, never takes
- * focus and is not announced. One × (or Esc inside it) hides it for 90 days;
- * following the link hides it for good. Rules: lib/promo.ts.
+ * focus and is not announced. Only × (or Esc inside it) hides it, for good;
+ * following the link does not. Rules: lib/promo.ts.
  */
 export function PromoStrip({ onDismiss, onClick }: { onDismiss: () => void; onClick: () => void }) {
   const ref = useRef<HTMLElement>(null)
